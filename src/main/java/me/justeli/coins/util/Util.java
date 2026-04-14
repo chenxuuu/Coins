@@ -6,6 +6,7 @@ import me.justeli.coins.config.MessagePosition;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Boss;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Flying;
@@ -79,6 +80,11 @@ public final class Util
         return msg;
     }
 
+    public static void resetMultiplier (Player player)
+    {
+        PLAYER_MULTIPLIER.remove(player.getUniqueId());
+    }
+
     public static void resetMultiplier ()
     {
         PLAYER_MULTIPLIER.clear();
@@ -97,7 +103,7 @@ public final class Util
                     permissions.add(PermissionNode.multiplierFromPermission(permission));
                 }
             }
-            PLAYER_MULTIPLIER.put(player.getUniqueId(), permissions.size() == 0? 1D : Collections.max(permissions));
+            PLAYER_MULTIPLIER.put(player.getUniqueId(), permissions.isEmpty()? 1D : Collections.max(permissions));
         }
         return PLAYER_MULTIPLIER.computeIfAbsent(player.getUniqueId(), empty -> 1D);
     }
@@ -116,7 +122,8 @@ public final class Util
     {
         return !isHostile(entity)
             && !(entity instanceof Player)
-            && entity instanceof LivingEntity;
+            && entity instanceof LivingEntity
+            && !(entity instanceof ArmorStand);
     }
 
     public static Player getOnlinePlayer (String incomplete)
@@ -257,18 +264,10 @@ public final class Util
     {
         switch (position)
         {
-            case ACTIONBAR:
-                new ActionBar(message, amount).send(player);
-                break;
-            case TITLE:
-                player.sendTitle(Util.color(Util.formatAmountAndCurrency(message, amount)), ChatColor.RESET.toString(), 10, 100, 20);
-                break;
-            case SUBTITLE:
-                SubTitle.of(Util.formatAmountAndCurrency(message, amount)).send(player);
-                break;
-            case CHAT:
-                player.sendMessage(Util.color(Util.formatAmountAndCurrency(message, amount)));
-                break;
+            case ACTIONBAR -> new ActionBar(message, amount).send(player);
+            case TITLE -> player.sendTitle(Util.color(Util.formatAmountAndCurrency(message, amount)), ChatColor.RESET.toString(), 10, 60, 10);
+            case SUBTITLE -> SubTitle.of(Util.formatAmountAndCurrency(message, amount)).send(player);
+            case CHAT -> player.sendMessage(Util.color(Util.formatAmountAndCurrency(message, amount)));
         }
     }
 }

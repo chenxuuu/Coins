@@ -46,11 +46,7 @@ public final class Coins
 {
     // TODO
     //  - fix:   you do the command "/withdraw 1 64" and then try to drop only one of the coins, 63 coins of the stack will be consumed
-    //  - fix:   do not pick up coins if max-balance-amount is exceeded (in Essentials)
-    //  - fix:   can u implement that the coins multiplier not require reload for it to work
-    //  - fix:   /ah dupe
-    //  - fix:   armor stands drop coins
-    //  - idea:  allow adding text to title, subtitle, action bar, for anything (pickup, death)
+    //  - fix:   does it still /ah dupe?
 
     private static final ExecutorService ASYNC_THREAD = Executors.newSingleThreadExecutor();
 

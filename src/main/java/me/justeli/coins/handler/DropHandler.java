@@ -21,6 +21,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -135,18 +136,30 @@ public final class DropHandler
             return;
         }
 
-        if (!Config.HOSTILE_DROP && Util.isHostile(dead))
+        boolean isHostile = Util.isHostile(dead);
+        boolean isPassive = Util.isPassive(dead);
+        boolean isPlayer = dead instanceof Player;
+
+        // if none of the possible categories
+        if (!isHostile && !isPassive && !isPlayer)
             return;
 
-        if (!Config.PASSIVE_DROP && Util.isPassive(dead))
+        if (!Config.HOSTILE_DROP && isHostile)
             return;
 
-        if (!Config.PLAYER_DROP && dead instanceof Player)
+        if (!Config.PASSIVE_DROP && isPassive)
             return;
 
-        if (dead instanceof Player)
+        if (!Config.PLAYER_DROP && isPlayer)
+            return;
+
+        if (isPlayer)
         {
-            this.coins.economy().balance(dead.getUniqueId(), balance -> { if (balance > 0) mobHandler(dead, attacker); });
+            this.coins.economy().balance(dead.getUniqueId(), balance -> {
+                if (balance > 0) {
+                    mobHandler(dead, attacker);
+                }
+            });
             return;
         }
 
@@ -291,5 +304,10 @@ public final class DropHandler
     private double getPlayerDamage (@NotNull Entity entity)
     {
         return entity.getPersistentDataContainer().getOrDefault(this.playerDamage, PersistentDataType.DOUBLE, 0D);
+    }
+
+    @EventHandler
+    public void onPlayerJoinEvent (PlayerJoinEvent event) {
+        Util.resetMultiplier(event.getPlayer());
     }
 }

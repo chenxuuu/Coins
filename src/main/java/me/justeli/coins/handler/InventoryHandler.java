@@ -4,6 +4,7 @@ import me.justeli.coins.Coins;
 import me.justeli.coins.util.Util;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
@@ -19,9 +20,12 @@ public final class InventoryHandler
         this.coins = coins;
     }
 
-    @EventHandler (ignoreCancelled = true)
+    @EventHandler (ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onInventoryClick (InventoryClickEvent event)
     {
+        if (event.isCancelled())
+            return;
+
         if (Util.isDisabledHere(event.getWhoClicked().getWorld()))
             return;
 

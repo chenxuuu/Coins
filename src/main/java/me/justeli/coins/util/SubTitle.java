@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 public final class SubTitle
 {
     private final String subtitle;
-    private int fadeOut = 20;
+    private int fadeOut = 10;
 
     private SubTitle (String subtitle)
     {
@@ -26,6 +26,6 @@ public final class SubTitle
 
     public void send (Player player)
     {
-        player.sendTitle(ChatColor.RESET.toString(), subtitle, 10, 100, fadeOut);
+        player.sendTitle(ChatColor.RESET.toString(), subtitle, 10, 60, fadeOut);
     }
 }
