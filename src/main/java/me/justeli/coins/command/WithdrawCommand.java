@@ -47,7 +47,7 @@ public final class WithdrawCommand
         if (!Config.ENABLE_WITHDRAW)
         {
             sender.sendMessage(Message.WITHDRAWING_DISABLED.toString());
-            return false;
+            return true;
         }
 
         if (!sender.hasPermission(PermissionNode.WITHDRAW) || !(sender instanceof Player))
