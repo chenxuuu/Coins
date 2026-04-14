@@ -4,9 +4,9 @@
 # This config was generated for Coins version ${project.version}.
 
 # This project is entirely being developed in the spare time of the developer.
-#  If you like the plugin, consider donating at https://paypal.me/justeli
+#  If you like the plugin, consider donating at https://plugin.coins.community/.
 
-# If you need support, join the Discord support server: https://discord.gg/fVwCETj
+# Join the Discord support server at https://plugin.coins.community/discord.
 #  Make sure to read the FAQ (#coins-faq) first, before asking for support!
 
 #  #  #  #  #  #  #  #
@@ -73,9 +73,9 @@ enchanted-coin: false
 #  interested if you use a custom texture pack.
 custom-model-data: 0
 
-#  #  #  #  #  #  #  #
-#  Coin Behaviour    #
-#  #  #  #  #  #  #  #
+#  #  #  #  #  #  #
+#  Coin Behavior  #
+#  #  #  #  #  #  #
 
 # The amount of money one coin is worth. Creates a random number between 'from' and
 #  'to' which - as money - will be given to the player on pickup.

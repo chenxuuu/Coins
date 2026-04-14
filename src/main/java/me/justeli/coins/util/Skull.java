@@ -1,12 +1,13 @@
 package me.justeli.coins.util;
 
-import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.properties.Property;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 
-import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -16,6 +17,7 @@ public final class Skull
     private static final HashMap<String, ItemStack> COIN = new HashMap<>();
     private static final UUID SKULL_UUID = UUID.fromString("00000001-0001-0001-0001-000000000002");
     private static final ItemStack SKULL_ITEM = new ItemStack(Material.PLAYER_HEAD);
+    private static final Base64.Decoder DECODER = Base64.getDecoder();
 
     public static ItemStack of (String texture)
     {
@@ -25,34 +27,38 @@ public final class Skull
         if (COIN.containsKey(texture))
             return COIN.get(texture);
 
-        SkullMeta skullMeta = (SkullMeta) SKULL_ITEM.getItemMeta();
+        if (!(SKULL_ITEM.getItemMeta() instanceof SkullMeta skullMeta))
+            return null;
 
-        GameProfile profile = new GameProfile(SKULL_UUID, "randomCoin");
-        profile.getProperties().put("textures", new Property("textures", texture));
-
-        Field profileField;
-
-        try
-        {
-            profileField = skullMeta.getClass().getDeclaredField("profile");
+        String url;
+        if (texture.startsWith("http://textures.minecraft.net/texture/")) {
+            // is already in the right format
+            url = texture;
         }
-        catch (NoSuchFieldException | SecurityException | NullPointerException e)
-        {
-            e.printStackTrace();
-            return SKULL_ITEM;
+        else if (texture.length() > 60 && texture.length() <= 70) {
+            // is probably the id without the url
+            url = "http://textures.minecraft.net/texture/" + texture;
         }
-
-        profileField.setAccessible(true);
-
-        try
-        {
-            profileField.set(skullMeta, profile);
-        }
-        catch (IllegalArgumentException | IllegalAccessException e)
-        {
-            e.printStackTrace();
+        else {
+            // is probably base64 texture
+            try {
+                String decoded = new String(DECODER.decode(texture));
+                url = decoded.split("\"url\":\"")[1].split("\"")[0].strip();
+            }
+            catch (Throwable throwable) {
+                return null;
+            }
         }
 
+        var profile = Bukkit.getServer().createPlayerProfile(SKULL_UUID, "randomCoin");
+        try {
+            profile.getTextures().setSkin(URI.create(url).toURL());
+        }
+        catch (MalformedURLException exception) {
+            return null;
+        }
+
+        skullMeta.setOwnerProfile(profile);
         SKULL_ITEM.setItemMeta(skullMeta);
 
         COIN.put(texture, SKULL_ITEM);
