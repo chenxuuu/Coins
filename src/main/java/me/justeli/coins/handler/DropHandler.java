@@ -2,7 +2,7 @@ package me.justeli.coins.handler;
 
 import me.justeli.coins.Coins;
 import me.justeli.coins.config.Config;
-import me.justeli.coins.item.CoinUtil;
+import me.justeli.coins.item.CoinMeta;
 import me.justeli.coins.util.PermissionNode;
 import me.justeli.coins.util.Util;
 import org.bukkit.GameMode;
@@ -27,10 +27,10 @@ import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.SplittableRandom;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Eli
@@ -43,10 +43,11 @@ public final class DropHandler implements Listener {
     public DropHandler(Coins coins) {
         this.coins = coins;
         this.playerDamageKey = new NamespacedKey(coins, "coins-player-damage");
+        coins.parseEventHandlers(this);
     }
 
-    private final Map<Location, Integer> locationAmountCache = new HashMap<>();
-    private final Map<Location, Long> locationLastTimeCache = new HashMap<>();
+    private final Map<Location, Integer> locationAmountCache = new ConcurrentHashMap<>();
+    private final Map<Location, Long> locationLastTimeCache = new ConcurrentHashMap<>();
 
     private static final SplittableRandom RANDOM = new SplittableRandom();
 
@@ -108,7 +109,7 @@ public final class DropHandler implements Listener {
                 if (Config.DROP_ON_DEATH && dead.getLocation().getWorld() != null) {
                     dead.getWorld().dropItem(
                         dead.getLocation(),
-                        coins.getCreateCoin().createOther().setData(CoinUtil.COINS_WORTH, take).build()
+                        coins.getCreateCoin().createOther().setData(CoinMeta.COINS_WORTH, take).build()
                     );
                 }
             });
@@ -260,7 +261,7 @@ public final class DropHandler implements Listener {
         }
 
         if (player != null) {
-            amount *= (int) Util.getMultiplier(player);
+            amount *= (int) coins.getSettings().getMultiplier(player);
         }
 
         for (int i = 0; i < amount; i++) {
@@ -288,6 +289,6 @@ public final class DropHandler implements Listener {
 
     @EventHandler
     void onPlayerJoinEvent(PlayerJoinEvent event) {
-        Util.resetMultiplier(event.getPlayer());
+        coins.getSettings().resetMultiplier(event.getPlayer());
     }
 }

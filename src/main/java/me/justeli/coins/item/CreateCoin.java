@@ -24,14 +24,14 @@ public final class CreateCoin {
         String name = Util.formatAmountAndCurrency(plural, worth);
 
         return coins.getBaseCoin().cloneBaseWithdrawn()
-            .setData(CoinUtil.COINS_WORTH, worth)
+            .setData(CoinMeta.COINS_WORTH, worth)
             .setName(name).build();
     }
 
     private MetaBuilder createDropBuilder() {
         MetaBuilder coin = coins.getBaseCoin().cloneBaseDropped();
         if (Config.DROP_EACH_COIN || !Config.STACK_COINS) {
-            return coin.setData(CoinUtil.COINS_RANDOM, RANDOM.nextInt());
+            return coin.setData(CoinMeta.COINS_RANDOM, RANDOM.nextInt());
         }
         return coin;
     }
@@ -46,7 +46,7 @@ public final class CreateCoin {
         }
 
         MetaBuilder coin = createDropBuilder()
-            .setData(CoinUtil.COINS_INCREMENT, increment);
+            .setData(CoinMeta.COINS_INCREMENT, increment);
 
         return coin.build();
     }

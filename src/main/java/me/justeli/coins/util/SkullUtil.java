@@ -9,21 +9,21 @@ import org.jetbrains.annotations.Nullable;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Eli
  * @since January 6, 2020 (creation)
  */
-public final class Skull {
-    private static final Map<String, ItemStack> COINS = new HashMap<>();
+public final class SkullUtil {
+    private static final Map<String, ItemStack> COINS = new ConcurrentHashMap<>();
     private static final UUID SKULL_UUID = UUID.fromString("00000001-0001-0001-0001-000000000002");
     private static final ItemStack SKULL_ITEM = new ItemStack(Material.PLAYER_HEAD);
     private static final Base64.Decoder DECODER = Base64.getDecoder();
 
-    public static @Nullable ItemStack of(String texture) {
+    public static @Nullable ItemStack fromTexture(String texture) {
         if (texture == null || texture.isEmpty()) {
             return null;
         }

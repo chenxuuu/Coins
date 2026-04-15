@@ -2,7 +2,7 @@ package me.justeli.coins.item;
 
 import me.justeli.coins.Coins;
 import me.justeli.coins.config.Config;
-import me.justeli.coins.util.Skull;
+import me.justeli.coins.util.SkullUtil;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -14,11 +14,17 @@ import java.util.Objects;
  * @since January 30, 2022 (creation)
  */
 public final class BaseCoin {
-    private final MetaBuilder withdrawnCoin;
-    private final MetaBuilder droppedCoin;
-    private final MetaBuilder otherCoin;
-
+    private final Coins coins;
     public BaseCoin(Coins coins) {
+        this.coins = coins;
+        reload();
+    }
+
+    private MetaBuilder withdrawnCoin;
+    private MetaBuilder droppedCoin;
+    private MetaBuilder otherCoin;
+
+    public void reload() {
         String texture = Config.SKULL_TEXTURE;
 
         ItemStack baseCoin;
@@ -27,7 +33,7 @@ public final class BaseCoin {
         }
         else {
             baseCoin = Objects.requireNonNullElseGet(
-                Skull.of(texture),
+                SkullUtil.fromTexture(texture),
                 () -> new ItemStack(Config.COIN_ITEM)
             );
         }
@@ -47,20 +53,20 @@ public final class BaseCoin {
         }
 
         this.withdrawnCoin = coins.meta(baseCoin.clone())
-            .setData(CoinUtil.COINS_TYPE, CoinUtil.TYPE_WITHDRAWN);
+            .setData(CoinMeta.COINS_TYPE, CoinMeta.TYPE_WITHDRAWN);
 
         MetaBuilder droppedCoinItem = coins.meta(baseCoin.clone())
             .setName(Config.DROPPED_COIN_NAME)
-            .setData(CoinUtil.COINS_TYPE, CoinUtil.TYPE_DROPPED);
+            .setData(CoinMeta.COINS_TYPE, CoinMeta.TYPE_DROPPED);
 
         if (Config.DROP_EACH_COIN) {
-            droppedCoinItem.setData(CoinUtil.COINS_WORTH, 1D);
+            droppedCoinItem.setData(CoinMeta.COINS_WORTH, 1D);
         }
 
         this.droppedCoin = droppedCoinItem;
         this.otherCoin = coins.meta(baseCoin.clone())
             .setName(Config.DROPPED_COIN_NAME)
-            .setData(CoinUtil.COINS_TYPE, CoinUtil.TYPE_OTHER);
+            .setData(CoinMeta.COINS_TYPE, CoinMeta.TYPE_OTHER);
     }
 
     public MetaBuilder cloneBaseDropped() {

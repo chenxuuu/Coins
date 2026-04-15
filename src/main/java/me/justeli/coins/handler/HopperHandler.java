@@ -16,6 +16,7 @@ public final class HopperHandler implements Listener {
     private final Coins coins;
     public HopperHandler(Coins coins) {
         this.coins = coins;
+        coins.parseEventHandlers(this);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -29,7 +30,7 @@ public final class HopperHandler implements Listener {
         }
 
         ItemStack item = event.getItem().getItemStack();
-        if (!coins.getCoinUtil().isDroppedCoin(item)) {
+        if (!coins.getCoinMeta().isDroppedCoin(item)) {
             return;
         }
 

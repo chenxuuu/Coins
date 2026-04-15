@@ -18,12 +18,8 @@ public final class VersionUtil {
     private static final Platform PLATFORM = findPlatform();
     private static final int VERSION = findVersion();
 
-    public static boolean isPaper() {
-        return PLATFORM == Platform.PAPER;
-    }
-
-    public static boolean isSpigot() {
-        return PLATFORM == Platform.SPIGOT;
+    public static Platform getPlatform() {
+        return PLATFORM;
     }
 
     public static int getMinecraftVersion() {

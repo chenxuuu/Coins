@@ -3,12 +3,15 @@ package me.justeli.coins.config;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Converter;
 import me.justeli.coins.Coins;
+import me.justeli.coins.util.PermissionNode;
 import me.justeli.coins.util.Util;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
+import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -24,6 +27,7 @@ import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -32,6 +36,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 /**
@@ -45,6 +51,7 @@ public final class Settings {
     public Settings(Coins coins) {
         this.coins = coins;
         this.fallbackLanguage = retrieveFallbackLanguage();
+        reload();
     }
 
     private static final List<String> LANGUAGES = List.of(
@@ -70,6 +77,31 @@ public final class Settings {
         }
 
         initializeMessages(Config.LANGUAGE);
+    }
+
+    public void reload() {
+        if (!coins.getDisabledReasons().isEmpty()) {
+            coins.line(Level.SEVERE);
+            coins.console(Level.SEVERE, """
+                Plugin 'Coins' is disabled, until issues are fixed and the server is \
+                rebooted (see start-up log of Coins).
+                """
+            );
+            coins.line(Level.SEVERE);
+            return;
+        }
+
+        resetMultiplier();
+        resetWarningCount();
+        parseConfig();
+        reloadLanguage();
+
+        if (warnings != 0) {
+            coins.console(Level.WARNING, """
+                Loaded the config of Coins with %d warnings. Check above here for details.
+                """.formatted(warnings)
+            );
+        }
     }
 
     private FileConfiguration getOrSaveConfig() {
@@ -145,11 +177,9 @@ public final class Settings {
                     if (value == null) {
                         throw new NullPointerException();
                     }
-                    // todo also parse with Registry.MATERIAL
                     else if (configClass == Material.class) {
                         configValue = getMaterial(value, configEntry.value()).orElse(Material.SUNFLOWER);
                     }
-                    // todo also parse with Registry.SOUNDS
                     else if (configClass == Sound.class) {
                         configValue = getSound(value, configEntry.value()).orElse(Sound.ITEM_ARMOR_EQUIP_GOLD);
                     }
@@ -234,13 +264,12 @@ public final class Settings {
         Config.DECIMAL_FORMATTER = new DecimalFormat("#" + groupSeparator + "##0." + decimals, formatSymbols);
     }
 
+    // todo also parse with Registry.MATERIAL
     private Optional<Material> getMaterial(String name, String configKey) {
-        Material material = Material.matchMaterial(name.replace(" ", "_").toUpperCase(Locale.ROOT).replace("COIN", "SUNFLOWER"));
-
+        Material material = Material.matchMaterial(name.replace(" ", "_").toUpperCase().replace("COIN", "SUNFLOWER"));
         if (material == null) {
-            showWarning("The material '" + name + "' in the config at `" + configKey + "` does not exist. Please use a " +
-                "material from: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html");
-
+            showWarning(("The material '%s' in the config at `%s` does not exist. Please use a material " +
+                "from: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Material.html").formatted(name, configKey));
             return Optional.empty();
         }
 
@@ -249,34 +278,35 @@ public final class Settings {
 
     private Optional<MessagePosition> getMessagePosition(String name, String configKey) {
         try {
-            return Optional.of(MessagePosition.valueOf(name.replace(" ", "_").toUpperCase(Locale.ROOT)));
+            return Optional.of(MessagePosition.valueOf(name.replace(" ", "_").toUpperCase()));
         }
         catch (IllegalArgumentException exception) {
-            showWarning("Message position '" + name + "' in the config at `" + configKey
-                + "` is invalid. Use either 'actionbar', 'title', 'subtitle', or 'chat'.");
+            showWarning(("Message position '%s' in the config at `%s` is invalid. Use either " +
+                "'actionbar', 'title', 'subtitle', or 'chat'.").formatted(name, configKey));
             return Optional.empty();
         }
     }
 
     private Optional<EntityType> getEntityType(String name, String configKey) {
         try {
-            return Optional.of(EntityType.valueOf(name.replace(" ", "_").toUpperCase(Locale.ROOT)));
+            return Optional.of(EntityType.valueOf(name.replace(" ", "_").toUpperCase()));
         }
         catch (IllegalArgumentException exception) {
-            showWarning("The mob name '" + name + "' in the config at `" + configKey + "` does not exist. Please use a " +
-                "name from: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/entity/EntityType.html");
+            showWarning(("The mob name '%s' in the config at `%s` does not exist. Please use a name from: " +
+                "https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/entity/EntityType.html").formatted(name, configKey));
 
             return Optional.empty();
         }
     }
 
+    // todo also parse with Registry.SOUNDS
     private Optional<Sound> getSound(String name, String configKey) {
         try {
             return Optional.of(Sound.valueOf(name.toUpperCase().replace(" ", "_")));
         }
         catch (IllegalArgumentException exception) {
-            showWarning("The sound '" + name + "' in the config at `" + configKey + "` does not exist. Please use a " +
-                "sound from: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html");
+            showWarning(("The sound '%s' in the config at `%s` does not exist. Please use a sound from: " +
+                "https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html").formatted(name, configKey));
 
             return Optional.empty();
         }
@@ -384,10 +414,17 @@ public final class Settings {
     }
 
     private void stackTraceInfo() {
-        coins.console(Level.WARNING, "The above error does not affect the plugin. Though, it is appreciated if you report this error to Coins " +
-            "in the Discord server (https://discord.gg/fVwCETj) at #coins-errors, because the error should not happen. Include this line. " +
-            "Details[OS='" + System.getProperty("os.name") + "',JAVA='" + System.getProperty("java.version") + "',MC='" +
-            coins.getServer().getVersion() + "']");
+        coins.console(Level.WARNING, """
+            The above error does not affect the plugin. Though, it is appreciated if you \
+            report this error to Coins in the Discord server (https://discord.gg/fVwCETj) \
+            at #coins-errors, because the error should not happen. Include this line. \
+            Details[OS='%s',JAVA='%s',MC='%s']
+            """.formatted(
+                System.getProperty("os.name"),
+                System.getProperty("java.version"),
+                coins.getServer().getVersion()
+            )
+        );
     }
 
     private Optional<File> retrieveLanguageFile(String language) {
@@ -403,5 +440,30 @@ public final class Settings {
         }
 
         return Optional.empty();
+    }
+
+    private final Map<UUID, Double> playerMultiplier = new ConcurrentHashMap<>();
+
+    public void resetMultiplier(Player player) {
+        playerMultiplier.remove(player.getUniqueId());
+    }
+
+    public void resetMultiplier() {
+        playerMultiplier.clear();
+    }
+
+    public double getMultiplier(Player player) {
+        if (!playerMultiplier.containsKey(player.getUniqueId())) {
+            List<Double> permissions = new ArrayList<>();
+            for (PermissionAttachmentInfo permissionInfo : player.getEffectivePermissions()) {
+                String permission = permissionInfo.getPermission();
+                if (permission.startsWith(PermissionNode.MULTIPLIER_PREFIX)) {
+                    String number = permission.substring(PermissionNode.MULTIPLIER_PREFIX.length());
+                    permissions.add(Util.parseDouble(number).orElse(1D));
+                }
+            }
+            playerMultiplier.put(player.getUniqueId(), permissions.isEmpty()? 1D : Collections.max(permissions));
+        }
+        return playerMultiplier.computeIfAbsent(player.getUniqueId(), empty -> 1D);
     }
 }

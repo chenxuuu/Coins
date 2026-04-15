@@ -22,6 +22,7 @@ public final class UnfairMobHandler implements Listener {
     public UnfairMobHandler(Coins coins) {
         this.fromSplitKey = new NamespacedKey(coins, "coins-slime-split");
         this.fromSpawnerKey = new NamespacedKey(coins, "coins-spawner-mob");
+        coins.parseEventHandlers(this);
     }
 
     @EventHandler

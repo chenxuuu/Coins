@@ -3,17 +3,16 @@ package me.justeli.coins.command;
 import me.justeli.coins.Coins;
 import me.justeli.coins.config.Config;
 import me.justeli.coins.config.Message;
-import me.justeli.coins.item.CoinUtil;
+import me.justeli.coins.item.CoinMeta;
 import me.justeli.coins.util.PermissionNode;
 import me.justeli.coins.util.Util;
-import me.justeli.coins.util.VersionChecker;
+import me.justeli.coins.util.PluginVersion;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
@@ -27,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.SplittableRandom;
 import java.util.TreeSet;
@@ -39,15 +37,16 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public final class CoinsCommand implements CommandExecutor, TabCompleter {
     private final Coins coins;
-    private final PluginCommand command;
-
     public CoinsCommand(Coins coins) {
         this.coins = coins;
-        this.command = coins.getCommand("coins");
-    }
 
-    public PluginCommand command() {
-        return command;
+        var command = coins.getCommand("coins");
+        if (command == null) {
+            return;
+        }
+
+        command.setExecutor(this);
+        command.setTabCompleter(this);
     }
 
     private final static SplittableRandom RANDOM = new SplittableRandom();
@@ -59,16 +58,16 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        switch (args[0].toLowerCase(Locale.ROOT)) {
+        switch (args[0].toLowerCase()) {
             case "reload":
                 if (checkPermission(sender, PermissionNode.COMMAND_RELOAD)) {
                     long ms = System.currentTimeMillis();
 
-                    coins.reload();
-                    int warnings = coins.getSettings().getWarningCount();
+                    coins.getSettings().reload();
+                    coins.getBaseCoin().reload();
 
                     sender.sendMessage(Message.RELOAD_SUCCESS.replace(Long.toString(System.currentTimeMillis() - ms)));
-                    if (warnings != 0) {
+                    if (coins.getSettings().getWarningCount() != 0) {
                         sender.sendMessage(Message.MINOR_ISSUES.toString());
                     }
                     else {
@@ -111,7 +110,7 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
                 if (checkPermission(sender, PermissionNode.COMMAND_VERSION)) {
                     sender.sendMessage(String.format(COINS_TITLE, "Version"));
 
-                    Optional<VersionChecker.Version> latestVersion = coins.latestVersion();
+                    Optional<PluginVersion> latestVersion = coins.getLatestVersion();
                     String currentVersion = coins.getDescription().getVersion();
 
                     sender.sendMessage(Message.CURRENTLY_INSTALLED.replace(currentVersion));
@@ -344,13 +343,13 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
 
         long amount = 0;
         for (Item item : items) {
-            if (!coins.getCoinUtil().isCoin(item.getItemStack())) {
+            if (!coins.getCoinMeta().isCoin(item.getItemStack())) {
                 continue;
             }
 
             float random = RANDOM.nextFloat() * 3F;
             item.setVelocity(new Vector(0, random, 0));
-            coins.sync((int) random * 5, item::remove);
+            coins.sync((long) (random * 5F), item::remove);
 
             amount++;
         }
@@ -362,7 +361,7 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
 
     private void handleSendHelp(CommandSender sender) {
         String currentVersion = coins.getDescription().getVersion();
-        Optional<VersionChecker.Version> latestVersion = coins.latestVersion();
+        Optional<PluginVersion> latestVersion = coins.getLatestVersion();
 
         int lines = 0;
 
@@ -425,7 +424,7 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
             public void run() {
                 Item item = location.getWorld().dropItem(
                     dropLocation,
-                    coins.meta(coin).setData(CoinUtil.COINS_RANDOM, RANDOM.nextDouble()).build()
+                    coins.meta(coin).setData(CoinMeta.COINS_RANDOM, RANDOM.nextDouble()).build()
                 );
 
                 item.setPickupDelay(30);

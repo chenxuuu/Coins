@@ -8,31 +8,28 @@ import me.justeli.coins.handler.InventoryHandler;
 import me.justeli.coins.handler.InteractionHandler;
 import me.justeli.coins.handler.ModificationHandler;
 import me.justeli.coins.handler.UnfairMobHandler;
-import me.justeli.coins.handler.listener.BukkitEventListener;
+import me.justeli.coins.handler.listener.SpigotEventListener;
 import me.justeli.coins.handler.PickupHandler;
 import me.justeli.coins.handler.DropHandler;
 import me.justeli.coins.handler.listener.PaperEventListener;
 import me.justeli.coins.hook.mythicmobs.MMHook;
 import me.justeli.coins.hook.bstats.Metrics;
-import me.justeli.coins.config.Config;
 import me.justeli.coins.config.Settings;
 import me.justeli.coins.hook.mythicmobs.MythicMobsHook;
 import me.justeli.coins.item.BaseCoin;
 import me.justeli.coins.hook.Economies;
-import me.justeli.coins.item.CoinUtil;
+import me.justeli.coins.item.CoinMeta;
 import me.justeli.coins.item.CreateCoin;
 import me.justeli.coins.item.MetaBuilder;
-import me.justeli.coins.util.VersionChecker;
-import me.justeli.coins.util.Util;
+import me.justeli.coins.util.PluginVersion;
+import me.justeli.coins.util.PluginVersionUtil;
 import me.justeli.coins.util.VersionUtil;
-import org.bukkit.command.PluginCommand;
+import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -46,7 +43,8 @@ import java.util.logging.Level;
  */
 public final class Coins extends JavaPlugin {
     // TODO
-    //  - fix:   you do the command "/withdraw 1 64" and then try to drop only one of the coins, 63 coins of the stack will be consumed
+    //  - fix:   you do the command "/withdraw 1 64" and then try to drop only one
+    //            of the coins, 63 coins of the stack will be consumed
     //  - fix:   does it still /ah dupe?
 
     private static final ExecutorService ASYNC_THREAD = Executors.newSingleThreadExecutor();
@@ -73,178 +71,130 @@ public final class Coins extends JavaPlugin {
             disablePlugin(UNSUPPORTED_VERSION);
         }
 
-        if (!VersionUtil.isSpigot() && !VersionUtil.isPaper()) {
+        if (VersionUtil.getPlatform() == VersionUtil.Platform.BUKKIT) {
             line(Level.SEVERE);
             console(Level.SEVERE, USING_BUKKIT);
             disablePlugin(USING_BUKKIT);
         }
 
         this.economy = new Economies(this);
-        for (String missingPlugin : economy.getMissingPluginNames()) {
-            noEconomySupport(missingPlugin);
+
+        if (!economy.getMissingPluginNames().isEmpty()) {
+            line(Level.SEVERE);
+            for (String missingPlugin : economy.getMissingPluginNames()) {
+                String reason = String.format(LACKING_ECONOMY, missingPlugin);
+                console(Level.SEVERE, reason);
+                disablePlugin(reason);
+            }
         }
 
-        if (!VersionUtil.isPaper()) {
-            console(Level.WARNING, "Players with a full inventory will be able to pick up coins when Paper is installed.");
+        if (VersionUtil.getPlatform() != VersionUtil.Platform.PAPER) {
+            console(Level.WARNING,
+                "Players with a full inventory will be able to pick up coins when Paper is installed."
+            );
         }
 
         if (getServer().getPluginManager().isPluginEnabled("MythicMobs")) {
-            Optional<Plugin> mm = Optional.ofNullable(getServer().getPluginManager().getPlugin("MythicMobs"));
             try {
-                if (mm.isPresent()) {
+                if (getServer().getPluginManager().getPlugin("MythicMobs") != null) {
                     this.mmHook = new MythicMobsHook(this);
                 }
             }
             catch (Exception | NoClassDefFoundError | InstantiationError exception) {
-                console(Level.WARNING, "Detected MythicMobs, but the version of MythicMobs you are using is not " + "supported. If this is a newer version, please contact support of Coins: https://discord.gg/fVwCETj");
+                console(Level.WARNING, """
+                    Detected MythicMobs, but the version of MythicMobs you are using \
+                    is not supported. If this is a newer version, please contact \
+                    support of Coins: https://plugin.coins.community/discord
+                    """
+                );
             }
         }
 
+        this.pluginVersionUtil = new PluginVersionUtil(this);
         if (disabledReasons.isEmpty()) {
             this.settings = new Settings(this);
-            reload();
+            this.baseCoin = new BaseCoin(this);
+            this.coinMeta = new CoinMeta(this);
+            this.createCoin = new CreateCoin(this);
 
-            registerEvents();
-            registerCommands();
+            // register events
+            this.unfairMobHandler = new UnfairMobHandler(this);
+            this.pickupHandler = new PickupHandler(this);
 
-            ASYNC_THREAD.submit(() -> {
-                versionChecker();
-                new Metrics(this).register();
-            });
-        }
-        else {
-            DisabledCommand disabledCommand = new DisabledCommand(this);
-            for (PluginCommand command : disabledCommand.getCommands()) {
-                command.setExecutor(disabledCommand);
+            if (VersionUtil.getPlatform() == VersionUtil.Platform.PAPER) {
+                new PaperEventListener(this);
+            }
+            else {
+                new SpigotEventListener(this);
             }
 
+            new HopperHandler(this);
+            new DropHandler(this);
+            new InteractionHandler(this);
+            new InventoryHandler(this);
+            new ModificationHandler(this);
+
+            // register commands
+            new CoinsCommand(this);
+            new WithdrawCommand(this);
+        }
+        else {
+            new DisabledCommand(this);
             line(Level.SEVERE);
             console(Level.SEVERE, "Plugin 'Coins' is now disabled, until the issues are fixed.");
             line(Level.SEVERE);
         }
 
-        console(Level.INFO, "Initialized in " + (System.currentTimeMillis() - current) + "ms.");
+        ASYNC_THREAD.submit(() -> {
+            pluginVersionUtil.checkVersion();
+            new Metrics(this);
+        });
+
+        console(Level.INFO, "Initialized in %,dms.".formatted(System.currentTimeMillis() - current));
     }
 
-    public void reload() {
-        if (!disabledReasons.isEmpty()) {
-            line(Level.SEVERE);
-            console(Level.SEVERE, "Plugin 'Coins' is disabled, until issues are fixed and the server is rebooted (see start-up log of Coins).");
-            line(Level.SEVERE);
-            return;
-        }
-
-        Util.resetMultiplier();
-
-        settings.resetWarningCount();
-        settings.parseConfig();
-        settings.reloadLanguage();
-
-        this.baseCoin = new BaseCoin(this);
-        this.createCoin = new CreateCoin(this);
-        this.coinUtil = new CoinUtil(this);
-
-        if (settings.getWarningCount() != 0) {
-            console(Level.WARNING, "Loaded the config of Coins with " + this.settings.getWarningCount() + " warnings. Check above here for details.");
-        }
-    }
-
-    private void noEconomySupport(String kind) {
-        line(Level.SEVERE);
-
-        String reason = String.format(LACKING_ECONOMY, kind);
-        console(Level.SEVERE, reason);
-        disablePlugin(reason);
-    }
-
-    private void line(Level type) {
-        console(type, "------------------------------------------------------------------");
-    }
-
-    private void disablePlugin(String reason) {
-        disabledReasons.add(reason);
-    }
-
-    // todo move to version checker class
-    private void versionChecker() {
-        if (!Config.CHECK_FOR_UPDATES) {
-            return;
-        }
-
-        VersionChecker checker = new VersionChecker("JustEli/Coins");
-        if (checker.getLatestVersion().isEmpty()) {
-            return;
-        }
-
-        this.latestVersion = checker.getLatestVersion().get();
-        String currentVersion = getDescription().getVersion();
-
-        if (!currentVersion.equals(latestVersion.tag()) && !latestVersion.preRelease()) {
-            line(Level.WARNING);
-            console(Level.WARNING, "  Detected an outdated version of Coins (" + currentVersion + " is installed).");
-            console(Level.WARNING, "  The latest version is " + latestVersion.tag() + ", released on "
-                + Util.DATE_FORMAT.format(new Date(latestVersion.time())) + ".");
-            console(Level.WARNING, "  Download: " + getDescription().getWebsite());
-            line(Level.WARNING);
-        }
-    }
-
-    private void registerEvents() {
-        PluginManager manager = getServer().getPluginManager();
-
-        manager.registerEvents(VersionUtil.isPaper()? new PaperEventListener(this) : new BukkitEventListener(this), this);
-        this.unfairMobHandler = new UnfairMobHandler(this);
-        this.pickupHandler = new PickupHandler(this);
-        manager.registerEvents(new HopperHandler(this), this);
-        manager.registerEvents(unfairMobHandler, this);
-        manager.registerEvents(pickupHandler, this);
-        manager.registerEvents(new DropHandler(this), this);
-        manager.registerEvents(new InteractionHandler(this), this);
-        manager.registerEvents(new InventoryHandler(this), this);
-        manager.registerEvents(new ModificationHandler(this), this);
-
-        if (mmHook().isPresent()) {
-            manager.registerEvents(mmHook, this);
-        }
-    }
-
-    private void registerCommands() {
-        // todo move to class of the commands
-        CoinsCommand coinsCommand = new CoinsCommand(this);
-
-        coinsCommand.command().setExecutor(coinsCommand);
-        coinsCommand.command().setTabCompleter(coinsCommand);
-
-        if (Config.ENABLE_WITHDRAW) {
-            WithdrawCommand withdrawCommand = new WithdrawCommand(this);
-
-            withdrawCommand.command().setExecutor(withdrawCommand);
-            withdrawCommand.command().setTabCompleter(withdrawCommand);
-        }
+    public void parseEventHandlers(@NotNull Listener listener) {
+        getServer().getPluginManager().registerEvents(listener, this);
     }
 
     public void sync(long ticks, Runnable runnable) {
         getServer().getScheduler().runTaskLater(this, runnable, ticks);
     }
 
+    public void line(Level type) {
+        console(type, "------------------------------------------------------------------");
+    }
+
     public void console(Level type, String message) {
         getLogger().log(type, message);
     }
+
+    // getters from other places
 
     private Economies economy;
     public Economies getEconomy() {
         return economy;
     }
 
-    private VersionChecker.Version latestVersion;
-    public Optional<VersionChecker.Version> latestVersion() {
-        return Optional.ofNullable(latestVersion);
+    public MetaBuilder meta(ItemStack itemStack) {
+        return new MetaBuilder(this, itemStack);
     }
+
+    private PluginVersionUtil pluginVersionUtil;
+    public Optional<PluginVersion> getLatestVersion() {
+        return pluginVersionUtil.getLatestVersion();
+    }
+
+    // plugin disablement
 
     private final List<String> disabledReasons = new ArrayList<>();
 
     public List<String> getDisabledReasons() {
-        return this.disabledReasons;
+        return disabledReasons;
+    }
+
+    private void disablePlugin(String reason) {
+        disabledReasons.add(reason);
     }
 
     private boolean pluginDisabled = false;
@@ -259,10 +209,6 @@ public final class Coins extends JavaPlugin {
     }
 
     // getters of classes
-
-    public MetaBuilder meta(ItemStack itemStack) {
-        return new MetaBuilder(this, itemStack);
-    }
 
     private BaseCoin baseCoin;
     public BaseCoin getBaseCoin() {
@@ -279,9 +225,9 @@ public final class Coins extends JavaPlugin {
         return createCoin;
     }
 
-    private CoinUtil coinUtil;
-    public CoinUtil getCoinUtil() {
-        return coinUtil;
+    private CoinMeta coinMeta;
+    public CoinMeta getCoinMeta() {
+        return coinMeta;
     }
 
     private PickupHandler pickupHandler;
@@ -298,6 +244,6 @@ public final class Coins extends JavaPlugin {
 
     private MMHook mmHook;
     public Optional<MMHook> mmHook() {
-        return Optional.ofNullable(this.mmHook);
+        return Optional.ofNullable(mmHook);
     }
 }

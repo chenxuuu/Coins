@@ -23,7 +23,6 @@ import org.bukkit.entity.Snowman;
 import org.bukkit.entity.Wolf;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.permissions.PermissionAttachmentInfo;
 import org.bukkit.projectiles.ProjectileSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,13 +31,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.SplittableRandom;
-import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -48,7 +42,6 @@ import java.util.regex.Pattern;
  */
 public final class Util {
     private static final Pattern HEX_PATTERN = Pattern.compile("(?<!\\\\)(&#[a-fA-F\\d]{6})");
-    private static final Map<UUID, Double> PLAYER_MULTIPLIER = new HashMap<>();
     private static final SplittableRandom RANDOM = new SplittableRandom();
 
     public static void sendNoPermission(CommandSender sender) {
@@ -82,29 +75,6 @@ public final class Util {
         }
 
         return message;
-    }
-
-    public static void resetMultiplier(Player player) {
-        PLAYER_MULTIPLIER.remove(player.getUniqueId());
-    }
-
-    public static void resetMultiplier() {
-        PLAYER_MULTIPLIER.clear();
-    }
-
-    public static double getMultiplier(Player player) {
-        if (!PLAYER_MULTIPLIER.containsKey(player.getUniqueId())) {
-            List<Double> permissions = new ArrayList<>();
-            for (PermissionAttachmentInfo permissionInfo : player.getEffectivePermissions()) {
-                String permission = permissionInfo.getPermission();
-                if (permission.startsWith(PermissionNode.MULTIPLIER_PREFIX)) {
-                    String number = permission.substring(PermissionNode.MULTIPLIER_PREFIX.length());
-                    permissions.add(Util.parseDouble(number).orElse(1D));
-                }
-            }
-            PLAYER_MULTIPLIER.put(player.getUniqueId(), permissions.isEmpty()? 1D : Collections.max(permissions));
-        }
-        return PLAYER_MULTIPLIER.computeIfAbsent(player.getUniqueId(), empty -> 1D);
     }
 
     public static boolean isHostile(Entity entity) {

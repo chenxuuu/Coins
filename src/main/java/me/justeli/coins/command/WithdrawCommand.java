@@ -8,7 +8,6 @@ import me.justeli.coins.util.Util;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -23,15 +22,16 @@ import java.util.List;
  */
 public final class WithdrawCommand implements CommandExecutor, TabCompleter {
     private final Coins coins;
-    private final PluginCommand command;
-
     public WithdrawCommand(Coins coins) {
         this.coins = coins;
-        this.command = coins.getCommand("withdraw");
-    }
 
-    public PluginCommand command() {
-        return command;
+        var command = coins.getCommand("withdraw");
+        if (command == null) {
+            return;
+        }
+
+        command.setExecutor(this);
+        command.setTabCompleter(this);
     }
 
     @Override

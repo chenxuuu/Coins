@@ -10,9 +10,9 @@ import java.util.Optional;
  * @author Eli
  * @since January 30, 2022 (creation)
  */
-public final class CoinUtil {
+public final class CoinMeta {
     private final Coins coins;
-    public CoinUtil(Coins coins) {
+    public CoinMeta(Coins coins) {
         this.coins = coins;
     }
 

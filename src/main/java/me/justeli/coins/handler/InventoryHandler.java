@@ -16,6 +16,7 @@ public final class InventoryHandler implements Listener {
     private final Coins coins;
     public InventoryHandler(Coins coins) {
         this.coins = coins;
+        coins.parseEventHandlers(this);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
@@ -32,7 +33,7 @@ public final class InventoryHandler implements Listener {
             return;
         }
 
-        if (!coins.getCoinUtil().isDroppedCoin(event.getCurrentItem())) {
+        if (!coins.getCoinMeta().isDroppedCoin(event.getCurrentItem())) {
             return;
         }
 

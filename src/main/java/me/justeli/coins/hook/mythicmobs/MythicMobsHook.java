@@ -15,9 +15,10 @@ import org.bukkit.event.EventHandler;
 public final class MythicMobsHook implements MMHook {
     private final Coins coins;
 
-    // todo move mythic mobs hook to different plugin
+    // todo move mythic mobs hook to separate plugin
     public MythicMobsHook(Coins coins) {
         this.coins = coins;
+        coins.parseEventHandlers(this);
     }
 
     private final static BukkitAPIHelper BUKKIT_API_HELPER = new BukkitAPIHelper();

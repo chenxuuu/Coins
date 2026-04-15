@@ -19,6 +19,7 @@ public final class ModificationHandler implements Listener {
     private final Coins coins;
     public ModificationHandler(Coins coins) {
         this.coins = coins;
+        coins.parseEventHandlers(this);
     }
 
     @EventHandler
@@ -28,7 +29,7 @@ public final class ModificationHandler implements Listener {
         }
 
         for (ItemStack stack : event.getInventory().getContents()) {
-            if (!coins.getCoinUtil().isCoin(stack)) {
+            if (!coins.getCoinMeta().isCoin(stack)) {
                 continue;
             }
 
@@ -43,7 +44,7 @@ public final class ModificationHandler implements Listener {
         }
 
         for (ItemStack stack : event.getInventory().getContents()) {
-            if (coins.getCoinUtil().isCoin(stack)) {
+            if (coins.getCoinMeta().isCoin(stack)) {
                 event.getInventory().setResult(null);
                 break;
             }
@@ -56,7 +57,7 @@ public final class ModificationHandler implements Listener {
             return;
         }
 
-        if (event.getResult() != null && coins.getCoinUtil().isCoin(event.getResult())) {
+        if (event.getResult() != null && coins.getCoinMeta().isCoin(event.getResult())) {
             event.setResult(null);
         }
     }
@@ -67,7 +68,7 @@ public final class ModificationHandler implements Listener {
             return;
         }
 
-        if (coins.getCoinUtil().isCoin(event.getSource())) {
+        if (coins.getCoinMeta().isCoin(event.getSource())) {
             event.setCancelled(true);
         }
     }
@@ -78,7 +79,7 @@ public final class ModificationHandler implements Listener {
             return;
         }
 
-        if (coins.getCoinUtil().isCoin(event.getFuel())) {
+        if (coins.getCoinMeta().isCoin(event.getFuel())) {
             event.setBurnTime(0);
             event.setBurning(false);
         }

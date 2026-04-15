@@ -11,10 +11,11 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
  * @author Eli
  * @since September 13, 2020 (creation)
  */
-public final class BukkitEventListener implements Listener {
+public final class SpigotEventListener implements Listener {
     private final Coins coins;
-    public BukkitEventListener(Coins coins) {
+    public SpigotEventListener(Coins coins) {
         this.coins = coins;
+        coins.parseEventHandlers(this);
     }
 
     @EventHandler(ignoreCancelled = true)

@@ -1,7 +1,7 @@
 package me.justeli.coins.config;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Eli
@@ -44,7 +44,7 @@ public enum Message {
     OUTDATED,
     ;
 
-    static final Map<Message, String> MESSAGES = new HashMap<>();
+    static final Map<Message, String> MESSAGES = new ConcurrentHashMap<>();
 
     @Override
     public String toString() {

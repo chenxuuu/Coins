@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Eli
@@ -17,8 +18,8 @@ import java.util.Set;
 public class Config {
     private Config() {}
 
-    public static Map<Material, Integer> BLOCK_DROPS = new HashMap<>();
-    public static Map<EntityType, Integer> MOB_MULTIPLIER = new HashMap<>();
+    public static Map<Material, Integer> BLOCK_DROPS = new ConcurrentHashMap<>();
+    public static Map<EntityType, Integer> MOB_MULTIPLIER = new ConcurrentHashMap<>();
     public static DecimalFormat DECIMAL_FORMATTER = new DecimalFormat();
 
     @ConfigEntry("stack-coins")

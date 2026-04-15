@@ -6,11 +6,7 @@ import me.justeli.coins.util.Util;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.PluginCommand;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * @author Eli
@@ -18,16 +14,17 @@ import java.util.Set;
  */
 public final class DisabledCommand implements CommandExecutor {
     private final Coins coins;
-    private final Set<PluginCommand> commands = new HashSet<>();
-
     public DisabledCommand(Coins coins) {
         this.coins = coins;
-        this.commands.add(coins.getCommand("coins"));
-        this.commands.add(coins.getCommand("withdraw"));
-    }
 
-    public Set<PluginCommand> getCommands() {
-        return commands;
+        var coinsCommand = coins.getCommand("coins");
+        var withdrawCommand = coins.getCommand("withdraw");
+        if (coinsCommand == null || withdrawCommand == null) {
+            return;
+        }
+
+        coinsCommand.setExecutor(this);
+        withdrawCommand.setExecutor(this);
     }
 
     @Override

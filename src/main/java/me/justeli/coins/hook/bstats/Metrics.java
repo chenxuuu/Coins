@@ -18,6 +18,7 @@ public final class Metrics {
     private final Coins coins;
     public Metrics(Coins coins) {
         this.coins = coins;
+        register();
     }
 
     public static void metrics(JavaPlugin plugin, final Consumer<Metric> consumer) {
@@ -78,7 +79,7 @@ public final class Metrics {
             metrics.add("deathMessage", Config.DEATH_MESSAGE);
             metrics.add("location-limit-hours", Config.LOCATION_LIMIT_HOURS);
             metrics.add("usingSkullTexture", Config.SKULL_TEXTURE != null && !Config.SKULL_TEXTURE.isEmpty());
-            metrics.add("usingPaper", VersionUtil.isPaper());
+            metrics.add("usingPaper", VersionUtil.getPlatform() == VersionUtil.Platform.PAPER);
             metrics.add("usingMythicMobs", coins.mmHook().isPresent());
             metrics.add("droppedCoinName", Config.DROPPED_COIN_NAME);
             metrics.add("withdrawnCoinNamesSingular", Config.WITHDRAWN_COIN_NAME_SINGULAR);

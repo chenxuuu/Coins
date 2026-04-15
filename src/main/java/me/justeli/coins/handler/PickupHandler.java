@@ -13,11 +13,10 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Eli
@@ -27,11 +26,12 @@ public final class PickupHandler implements Listener {
     private final Coins coins;
     public PickupHandler(Coins coins) {
         this.coins = coins;
+        coins.parseEventHandlers(this);
     }
 
-    private final Set<UUID> thrownCoinCache = new HashSet<>();
-    private final Map<UUID, Double> pickupAmountCache = new HashMap<>();
-    private final Map<UUID, Long> pickupTimeCache = new HashMap<>();
+    private final Set<UUID> thrownCoinCache = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, Double> pickupAmountCache = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> pickupTimeCache = new ConcurrentHashMap<>();
 
     @EventHandler
     void onEntityPickupItemEvent(EntityPickupItemEvent event) {
@@ -55,7 +55,7 @@ public final class PickupHandler implements Listener {
         }
 
         Item item = event.getItem();
-        if (!coins.getCoinUtil().isCoin(item.getItemStack())) {
+        if (!coins.getCoinMeta().isCoin(item.getItemStack())) {
             return;
         }
 
@@ -79,7 +79,7 @@ public final class PickupHandler implements Listener {
             thrownCoinCache.remove(item.getUniqueId());
         });
 
-        double amount = coins.getCoinUtil().getValue(item.getItemStack());
+        double amount = coins.getCoinMeta().getValue(item.getItemStack());
         if (amount == 0) {
             depositRandomMoney(item.getItemStack(), player);
         }
@@ -98,7 +98,7 @@ public final class PickupHandler implements Listener {
             return;
         }
 
-        depositMoney(player, item.getAmount() * Util.getRandomMoneyAmount() * coins.getCoinUtil().getIncrement(item));
+        depositMoney(player, item.getAmount() * Util.getRandomMoneyAmount() * coins.getCoinMeta().getIncrement(item));
     }
 
     public void depositMoney(Player player, double amount) {

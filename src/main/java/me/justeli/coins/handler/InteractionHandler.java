@@ -18,6 +18,7 @@ public final class InteractionHandler implements Listener {
     private final Coins coins;
     public InteractionHandler(Coins coins) {
         this.coins = coins;
+        coins.parseEventHandlers(this);
     }
 
     @EventHandler
@@ -26,7 +27,7 @@ public final class InteractionHandler implements Listener {
             return;
         }
 
-        if (!coins.getCoinUtil().isWithdrawnCoin(event.getItem())) {
+        if (!coins.getCoinMeta().isWithdrawnCoin(event.getItem())) {
             return;
         }
 
@@ -47,7 +48,7 @@ public final class InteractionHandler implements Listener {
             return;
         }
 
-        double amount = coins.getCoinUtil().getValue(event.getItem());
+        double amount = coins.getCoinMeta().getValue(event.getItem());
         event.getItem().setAmount(0);
 
         coins.getPickupHandler().depositMoney(player, amount);

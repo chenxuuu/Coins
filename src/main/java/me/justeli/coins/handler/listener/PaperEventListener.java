@@ -14,6 +14,7 @@ public final class PaperEventListener implements Listener {
     private final Coins coins;
     public PaperEventListener(Coins coins) {
         this.coins = coins;
+        coins.parseEventHandlers(this);
     }
 
     @EventHandler
