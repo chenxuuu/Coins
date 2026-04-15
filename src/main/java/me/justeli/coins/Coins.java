@@ -24,7 +24,7 @@ import me.justeli.coins.item.CreateCoin;
 import me.justeli.coins.item.MetaBuilder;
 import me.justeli.coins.util.VersionChecker;
 import me.justeli.coins.util.Util;
-import me.justeli.coins.util.VersionLib;
+import me.justeli.coins.util.VersionUtil;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
@@ -40,10 +40,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 
-/* Eli @ December 13, 2016 (creation) */
-public final class Coins
-    extends JavaPlugin
-{
+/**
+ * @author Eli
+ * @since December 13, 2016 (creation)
+ */
+public final class Coins extends JavaPlugin {
     // TODO
     //  - fix:   you do the command "/withdraw 1 64" and then try to drop only one of the coins, 63 coins of the stack will be consumed
     //  - fix:   does it still /ah dupe?
@@ -54,80 +55,66 @@ public final class Coins
         "Coins only supports Minecraft version 1.19 and newer.";
 
     private static final String USING_BUKKIT = """
-        You seem to be using Bukkit, but the plugin Coins \
-        requires at least Spigot! Please use Spigot or Paper. Moving from Bukkit to \
-        Spigot will NOT cause any problems with other plugins, since Spigot only adds \
-        more features to Bukkit.""";
+        You seem to be using Bukkit, but the plugin Coins requires at least Spigot! Please use Spigot \
+        or Paper. Moving from Bukkit to Spigot will NOT cause any problems with other plugins, since \
+        Spigot only adds more features to Bukkit.""";
 
-    private static final String LACKING_ECONOMY = "There is no proper economy installed. Please install %s.";
+    private static final String LACKING_ECONOMY =
+        "There is no proper economy installed. Please install %s.";
 
     @Override
-    public void onEnable ()
-    {
+    public void onEnable() {
         long current = System.currentTimeMillis();
         Locale.setDefault(Locale.US);
 
-        if (VersionLib.getMinecraftVersion() < 19)
-        {
+        if (VersionUtil.getMinecraftVersion() < 19) {
             line(Level.SEVERE);
             console(Level.SEVERE, UNSUPPORTED_VERSION);
             disablePlugin(UNSUPPORTED_VERSION);
         }
 
-        if (!VersionLib.isSpigot() && !VersionLib.isPaper())
-        {
+        if (!VersionUtil.isSpigot() && !VersionUtil.isPaper()) {
             line(Level.SEVERE);
             console(Level.SEVERE, USING_BUKKIT);
             disablePlugin(USING_BUKKIT);
         }
-        
+
         this.economy = new Economies(this);
-        for (String missingPlugin : this.economy.getMissingPluginNames())
-        {
+        for (String missingPlugin : economy.getMissingPluginNames()) {
             noEconomySupport(missingPlugin);
         }
 
-        if (!VersionLib.isPaper())
-        {
+        if (!VersionUtil.isPaper()) {
             console(Level.WARNING, "Players with a full inventory will be able to pick up coins when Paper is installed.");
         }
 
-        if (getServer().getPluginManager().isPluginEnabled("MythicMobs"))
-        {
+        if (getServer().getPluginManager().isPluginEnabled("MythicMobs")) {
             Optional<Plugin> mm = Optional.ofNullable(getServer().getPluginManager().getPlugin("MythicMobs"));
-            try
-            {
-                if (mm.isPresent())
-                {
+            try {
+                if (mm.isPresent()) {
                     this.mmHook = new MythicMobsHook(this);
                 }
             }
-            catch (Exception | NoClassDefFoundError | InstantiationError exception)
-            {
-                console(Level.WARNING, "Detected MythicMobs, but the version of MythicMobs you are using is not " +
-                    "supported. If this is a newer version, please contact support of Coins: https://discord.gg/fVwCETj");
+            catch (Exception | NoClassDefFoundError | InstantiationError exception) {
+                console(Level.WARNING, "Detected MythicMobs, but the version of MythicMobs you are using is not " + "supported. If this is a newer version, please contact support of Coins: https://discord.gg/fVwCETj");
             }
         }
 
-        if (this.disabledReasons.isEmpty())
-        {
+        if (disabledReasons.isEmpty()) {
             this.settings = new Settings(this);
             reload();
 
             registerEvents();
             registerCommands();
 
-            ASYNC_THREAD.submit(() ->
-            {
+            ASYNC_THREAD.submit(() -> {
                 versionChecker();
                 new Metrics(this).register();
             });
         }
-        else
-        {
+        else {
             DisabledCommand disabledCommand = new DisabledCommand(this);
-            for (PluginCommand command : disabledCommand.commands())
-            {
+            for (PluginCommand command : disabledCommand.getCommands()) {
                 command.setExecutor(disabledCommand);
             }
 
@@ -135,13 +122,12 @@ public final class Coins
             console(Level.SEVERE, "Plugin 'Coins' is now disabled, until the issues are fixed.");
             line(Level.SEVERE);
         }
+
         console(Level.INFO, "Initialized in " + (System.currentTimeMillis() - current) + "ms.");
     }
 
-    public void reload ()
-    {
-        if (!this.disabledReasons.isEmpty())
-        {
+    public void reload() {
+        if (!disabledReasons.isEmpty()) {
             line(Level.SEVERE);
             console(Level.SEVERE, "Plugin 'Coins' is disabled, until issues are fixed and the server is rebooted (see start-up log of Coins).");
             line(Level.SEVERE);
@@ -150,95 +136,86 @@ public final class Coins
 
         Util.resetMultiplier();
 
-        this.settings.resetWarningCount();
-        this.settings.parseConfig();
-        this.settings.reloadLanguage();
+        settings.resetWarningCount();
+        settings.parseConfig();
+        settings.reloadLanguage();
 
         this.baseCoin = new BaseCoin(this);
         this.createCoin = new CreateCoin(this);
         this.coinUtil = new CoinUtil(this);
 
-        if (this.settings.getWarningCount() != 0)
-        {
+        if (settings.getWarningCount() != 0) {
             console(Level.WARNING, "Loaded the config of Coins with " + this.settings.getWarningCount() + " warnings. Check above here for details.");
         }
     }
 
-    private void noEconomySupport (String kind)
-    {
+    private void noEconomySupport(String kind) {
         line(Level.SEVERE);
 
         String reason = String.format(LACKING_ECONOMY, kind);
-
         console(Level.SEVERE, reason);
         disablePlugin(reason);
     }
 
-    private void line (Level type)
-    {
+    private void line(Level type) {
         console(type, "------------------------------------------------------------------");
     }
 
-    private void disablePlugin (String reason)
-    {
-        this.disabledReasons.add(reason);
+    private void disablePlugin(String reason) {
+        disabledReasons.add(reason);
     }
 
-    private void versionChecker ()
-    {
-        if (!Config.CHECK_FOR_UPDATES)
+    // todo move to version checker class
+    private void versionChecker() {
+        if (!Config.CHECK_FOR_UPDATES) {
             return;
+        }
 
         VersionChecker checker = new VersionChecker("JustEli/Coins");
-        if (checker.latestVersion().isEmpty())
+        if (checker.getLatestVersion().isEmpty()) {
             return;
+        }
 
-        this.latestVersion = checker.latestVersion().get();
+        this.latestVersion = checker.getLatestVersion().get();
         String currentVersion = getDescription().getVersion();
 
-        if (!currentVersion.equals(this.latestVersion.tag()) && !this.latestVersion.preRelease())
-        {
+        if (!currentVersion.equals(latestVersion.tag()) && !latestVersion.preRelease()) {
             line(Level.WARNING);
             console(Level.WARNING, "  Detected an outdated version of Coins (" + currentVersion + " is installed).");
-            console(Level.WARNING, "  The latest version is " + this.latestVersion.tag() + ", released on "
-                + Util.DATE_FORMAT.format(new Date(this.latestVersion.time())) + ".");
+            console(Level.WARNING, "  The latest version is " + latestVersion.tag() + ", released on "
+                + Util.DATE_FORMAT.format(new Date(latestVersion.time())) + ".");
             console(Level.WARNING, "  Download: " + getDescription().getWebsite());
             line(Level.WARNING);
         }
     }
 
-    private void registerEvents ()
-    {
+    private void registerEvents() {
         PluginManager manager = getServer().getPluginManager();
 
-        manager.registerEvents(VersionLib.isPaper()? new PaperEventListener(this) : new BukkitEventListener(this), this);
-
+        manager.registerEvents(VersionUtil.isPaper()? new PaperEventListener(this) : new BukkitEventListener(this), this);
         this.unfairMobHandler = new UnfairMobHandler(this);
         this.pickupHandler = new PickupHandler(this);
-
         manager.registerEvents(new HopperHandler(this), this);
-        manager.registerEvents(this.unfairMobHandler, this);
-        manager.registerEvents(this.pickupHandler, this);
+        manager.registerEvents(unfairMobHandler, this);
+        manager.registerEvents(pickupHandler, this);
         manager.registerEvents(new DropHandler(this), this);
         manager.registerEvents(new InteractionHandler(this), this);
         manager.registerEvents(new InventoryHandler(this), this);
         manager.registerEvents(new ModificationHandler(this), this);
 
-        if (mmHook().isPresent())
-        {
-            manager.registerEvents(this.mmHook, this);
+        if (mmHook().isPresent()) {
+            manager.registerEvents(mmHook, this);
         }
     }
 
-    private void registerCommands ()
-    {
+    private void registerCommands() {
+        // todo move to class of the commands
         CoinsCommand coinsCommand = new CoinsCommand(this);
 
         coinsCommand.command().setExecutor(coinsCommand);
         coinsCommand.command().setTabCompleter(coinsCommand);
 
-        if (Config.ENABLE_WITHDRAW)
-        {
+        if (Config.ENABLE_WITHDRAW) {
             WithdrawCommand withdrawCommand = new WithdrawCommand(this);
 
             withdrawCommand.command().setExecutor(withdrawCommand);
@@ -246,99 +223,81 @@ public final class Coins
         }
     }
 
-    public void sync (final int ticks, final Runnable runnable)
-    {
+    public void sync(long ticks, Runnable runnable) {
         getServer().getScheduler().runTaskLater(this, runnable, ticks);
     }
 
-    public void console (Level type, String message)
-    {
+    public void console(Level type, String message) {
         getLogger().log(type, message);
     }
 
     private Economies economy;
-    public Economies economy ()
-    {
-        return this.economy;
+    public Economies getEconomy() {
+        return economy;
     }
 
     private VersionChecker.Version latestVersion;
-    public Optional<VersionChecker.Version> latestVersion ()
-    {
-        return Optional.ofNullable(this.latestVersion);
+    public Optional<VersionChecker.Version> latestVersion() {
+        return Optional.ofNullable(latestVersion);
     }
 
     private final List<String> disabledReasons = new ArrayList<>();
-    public List<String> disabledReasons ()
-    {
+
+    public List<String> getDisabledReasons() {
         return this.disabledReasons;
     }
 
     private boolean pluginDisabled = false;
 
-    public boolean isDisabled ()
-    {
-        return this.pluginDisabled;
+    public boolean isDisabled() {
+        return pluginDisabled;
     }
 
-    public boolean toggleDisabled ()
-    {
-        this.pluginDisabled = !this.pluginDisabled;
-        return !this.pluginDisabled;
+    public boolean toggleDisabled() {
+        this.pluginDisabled = !pluginDisabled;
+        return !pluginDisabled;
     }
 
-    private MMHook mmHook;
+    // getters of classes
 
-    public Optional<MMHook> mmHook ()
-    {
-        return Optional.ofNullable(this.mmHook);
+    public MetaBuilder meta(ItemStack itemStack) {
+        return new MetaBuilder(this, itemStack);
     }
-
 
     private BaseCoin baseCoin;
-
-    public BaseCoin getBaseCoin ()
-    {
+    public BaseCoin getBaseCoin() {
         return baseCoin;
     }
 
     private Settings settings;
-
-    public Settings settings ()
-    {
+    public Settings getSettings() {
         return settings;
     }
 
-    public MetaBuilder meta (ItemStack itemStack)
-    {
-        return new MetaBuilder(this, itemStack);
-    }
-
     private CreateCoin createCoin;
-
-    public CreateCoin getCreateCoin ()
-    {
+    public CreateCoin getCreateCoin() {
         return createCoin;
     }
 
     private CoinUtil coinUtil;
-
-    public CoinUtil getCoinUtil ()
-    {
+    public CoinUtil getCoinUtil() {
         return coinUtil;
     }
 
     private PickupHandler pickupHandler;
-
-    public PickupHandler getPickupHandler ()
-    {
+    public PickupHandler getPickupHandler() {
         return pickupHandler;
     }
 
     private UnfairMobHandler unfairMobHandler;
-
-    public UnfairMobHandler getUnfairMobHandler ()
-    {
+    public UnfairMobHandler getUnfairMobHandler() {
         return unfairMobHandler;
+    }
+
+    // hooks
+
+    private MMHook mmHook;
+    public Optional<MMHook> mmHook() {
+        return Optional.ofNullable(this.mmHook);
     }
 }

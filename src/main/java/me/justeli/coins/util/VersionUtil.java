@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
  * @author Eli
  * @since April 14, 2026
  */
-public final class VersionLib {
+public final class VersionUtil {
     public enum Platform {
         BUKKIT,
         SPIGOT,
@@ -28,10 +28,6 @@ public final class VersionLib {
 
     public static int getMinecraftVersion() {
         return VERSION;
-    }
-
-    public static Platform getPlatform() {
-        return PLATFORM;
     }
 
     private static boolean hasClass(String className) {

@@ -4,31 +4,37 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
-/* Eli @ January 6, 2020 (creation) */
-public final class Skull
-{
-    private static final HashMap<String, ItemStack> COIN = new HashMap<>();
+/**
+ * @author Eli
+ * @since January 6, 2020 (creation)
+ */
+public final class Skull {
+    private static final Map<String, ItemStack> COINS = new HashMap<>();
     private static final UUID SKULL_UUID = UUID.fromString("00000001-0001-0001-0001-000000000002");
     private static final ItemStack SKULL_ITEM = new ItemStack(Material.PLAYER_HEAD);
     private static final Base64.Decoder DECODER = Base64.getDecoder();
 
-    public static ItemStack of (String texture)
-    {
-        if (texture == null || texture.isEmpty())
+    public static @Nullable ItemStack of(String texture) {
+        if (texture == null || texture.isEmpty()) {
             return null;
+        }
 
-        if (COIN.containsKey(texture))
-            return COIN.get(texture);
+        if (COINS.containsKey(texture)) {
+            return COINS.get(texture);
+        }
 
-        if (!(SKULL_ITEM.getItemMeta() instanceof SkullMeta skullMeta))
+        if (!(SKULL_ITEM.getItemMeta() instanceof SkullMeta skullMeta)) {
             return null;
+        }
 
         String url;
         if (texture.startsWith("http://textures.minecraft.net/texture/")) {
@@ -61,7 +67,7 @@ public final class Skull
         skullMeta.setOwnerProfile(profile);
         SKULL_ITEM.setItemMeta(skullMeta);
 
-        COIN.put(texture, SKULL_ITEM);
+        COINS.put(texture, SKULL_ITEM);
         return SKULL_ITEM;
     }
 }

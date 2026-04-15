@@ -8,28 +8,30 @@ import org.bukkit.event.inventory.InventoryPickupItemEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 
-public final class HopperHandler
-    implements Listener
-{
+/**
+ * @author Eli
+ * @since December 13, 2016 (creation)
+ */
+public final class HopperHandler implements Listener {
     private final Coins coins;
-
-    public HopperHandler (Coins coins)
-    {
+    public HopperHandler(Coins coins) {
         this.coins = coins;
     }
 
-    @EventHandler (ignoreCancelled = true)
-    public void onInventoryPickupItem (InventoryPickupItemEvent event)
-    {
-        if (!Config.DISABLE_HOPPERS)
+    @EventHandler(ignoreCancelled = true)
+    void onInventoryPickupItemEvent(InventoryPickupItemEvent event) {
+        if (!Config.DISABLE_HOPPERS) {
             return;
+        }
 
-        if (event.getInventory().getType() != InventoryType.HOPPER)
+        if (event.getInventory().getType() != InventoryType.HOPPER) {
             return;
+        }
 
         ItemStack item = event.getItem().getItemStack();
-        if (!this.coins.getCoinUtil().isDroppedCoin(item))
+        if (!coins.getCoinUtil().isDroppedCoin(item)) {
             return;
+        }
 
         event.setCancelled(true);
     }

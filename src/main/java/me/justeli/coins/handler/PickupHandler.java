@@ -15,128 +15,113 @@ import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-public final class PickupHandler
-    implements Listener
-{
+/**
+ * @author Eli
+ * @since December 13, 2016 (creation)
+ */
+public final class PickupHandler implements Listener {
     private final Coins coins;
-
-    public PickupHandler (Coins coins)
-    {
+    public PickupHandler(Coins coins) {
         this.coins = coins;
     }
 
     private final Set<UUID> thrownCoinCache = new HashSet<>();
-    private final HashMap<UUID, Double> pickupAmountCache = new HashMap<>();
-    private final HashMap<UUID, Long> pickupTimeCache = new HashMap<>();
+    private final Map<UUID, Double> pickupAmountCache = new HashMap<>();
+    private final Map<UUID, Long> pickupTimeCache = new HashMap<>();
 
     @EventHandler
-    public void onEntityPickupItem (EntityPickupItemEvent event)
-    {
+    void onEntityPickupItemEvent(EntityPickupItemEvent event) {
         // handled properly with PickupEvent
-        if (event.getEntity() instanceof Player)
+        if (event.getEntity() instanceof Player) {
             return;
+        }
 
         // don't let mobs pick up coins that are already being given to players
-        if (!this.thrownCoinCache.contains(event.getItem().getUniqueId()))
+        if (!thrownCoinCache.contains(event.getItem().getUniqueId())) {
             return;
+        }
 
         event.setCancelled(true);
     }
 
-    @EventHandler (ignoreCancelled = true)
-    public void onPickup (PickupEvent event)
-    {
-        if (Util.isDisabledHere(event.getPlayer().getWorld()))
+    @EventHandler(ignoreCancelled = true)
+    void onPickupEvent(PickupEvent event) {
+        if (Util.isDisabledHere(event.getPlayer().getWorld())) {
             return;
+        }
 
         Item item = event.getItem();
-        if (!this.coins.getCoinUtil().isCoin(item.getItemStack()))
+        if (!coins.getCoinUtil().isCoin(item.getItemStack())) {
             return;
+        }
 
         Player player = event.getPlayer();
         event.setCancelled(true);
 
-        if (!player.hasPermission(PermissionNode.DISABLE) || player.isOp() || player.hasPermission("*"))
-        {
-            double amount = this.coins.getCoinUtil().getValue(item.getItemStack());
-            giveCoin(item, player, amount);
-        }
-    }
-
-    private void giveCoin (Item item, Player player, double randomMoney)
-    {
-        if (this.thrownCoinCache.contains(item.getUniqueId()))
+        if (player.hasPermission(PermissionNode.DISABLE) && !player.isOp() && !player.hasPermission("*")) {
             return;
+        }
 
-        this.thrownCoinCache.add(item.getUniqueId());
+        if (thrownCoinCache.contains(item.getUniqueId())) {
+            return;
+        }
+
+        thrownCoinCache.add(item.getUniqueId());
         item.setVelocity(new Vector(0, 0.4, 0));
+        item.setPickupDelay(1200); // todo can thrownCoinCache be removed?
 
-        this.coins.sync(5, () ->
-        {
+        coins.sync(5, () -> {
             item.remove();
-            this.thrownCoinCache.remove(item.getUniqueId());
+            thrownCoinCache.remove(item.getUniqueId());
         });
 
-        // pass 0 for random amount
-        if (randomMoney == 0)
-        {
-            giveRandomMoney(item.getItemStack(), player);
+        double amount = coins.getCoinUtil().getValue(item.getItemStack());
+        if (amount == 0) {
+            depositRandomMoney(item.getItemStack(), player);
         }
-        else
-        {
-            giveMoney(player, randomMoney);
+        else {
+            depositMoney(player, amount);
         }
 
-        if (Config.PICKUP_SOUND)
-        {
+        if (Config.PICKUP_SOUND) {
             Util.playCoinPickupSound(player);
         }
     }
 
-    public void giveRandomMoney (ItemStack item, Player player)
-    {
-        if (Config.DROP_EACH_COIN)
-        {
-            giveMoney(player, item.getAmount());
+    public void depositRandomMoney(ItemStack item, Player player) {
+        if (Config.DROP_EACH_COIN) {
+            depositMoney(player, item.getAmount());
+            return;
         }
-        else
-        {
-            int amount = item.getAmount();
-            double total = amount * Util.getRandomMoneyAmount() * this.coins.getCoinUtil().getIncrement(item);
 
-            giveMoney(player, total);
-        }
+        depositMoney(player, item.getAmount() * Util.getRandomMoneyAmount() * coins.getCoinUtil().getIncrement(item));
     }
 
-    public void giveMoney (Player player, double rawAmount)
-    {
-        final double amount = Util.round(rawAmount);
-        this.coins.economy().deposit(player.getUniqueId(), amount, () ->
-        {
-            UUID uniqueId = player.getUniqueId();
-            long previousTime = this.pickupTimeCache.computeIfAbsent(uniqueId, empty -> 0L);
+    public void depositMoney(Player player, double amount) {
+        double rounded = Util.round(amount);
+        coins.getEconomy().deposit(player.getUniqueId(), rounded, () -> {
+            UUID uuid = player.getUniqueId();
+            long previousTime = pickupTimeCache.computeIfAbsent(uuid, empty -> 0L);
 
-            if (previousTime > System.currentTimeMillis() - 1500)
-            {
+            if (previousTime > System.currentTimeMillis() - 1500) {
                 // recently shown actionbar
-                double previousAmount = this.pickupAmountCache.computeIfAbsent(uniqueId, empty -> 0D);
-                this.pickupAmountCache.put(uniqueId, amount + previousAmount);
+                double previousAmount = pickupAmountCache.computeIfAbsent(uuid, empty -> 0D);
+                pickupAmountCache.put(uuid, rounded + previousAmount);
             }
-            else
-            {
-                this.pickupAmountCache.put(uniqueId, amount);
-            }
-
-            final double displayAmount = this.pickupAmountCache.computeIfAbsent(uniqueId, empty -> 0D);
-            if (!Config.PICKUP_MESSAGE.isEmpty())
-            {
-                Util.send(Config.PICKUP_MESSAGE_POSITION, player, Config.PICKUP_MESSAGE, displayAmount);
+            else {
+                pickupAmountCache.put(uuid, rounded);
             }
 
-            this.pickupTimeCache.put(uniqueId, System.currentTimeMillis());
+            double displayAmount = pickupAmountCache.computeIfAbsent(uuid, empty -> 0D);
+            if (!Config.PICKUP_MESSAGE.isEmpty()) {
+                Util.sendMessage(player, Config.PICKUP_MESSAGE, Config.PICKUP_MESSAGE_POSITION, displayAmount);
+            }
+
+            pickupTimeCache.put(uuid, System.currentTimeMillis());
         });
     }
 }

@@ -11,20 +11,18 @@ import java.net.URLConnection;
 import java.time.Instant;
 import java.util.Optional;
 
-/* Eli @ February 04, 2022 (creation) */
-public final class VersionChecker
-{
+/**
+ * @author Eli
+ * @since February 04, 2022 (creation)
+ */
+public final class VersionChecker {
     private Version latestVersion;
-
-    public Optional<Version> latestVersion ()
-    {
-        return Optional.of(this.latestVersion);
+    public Optional<Version> getLatestVersion() {
+        return Optional.of(latestVersion);
     }
 
-    public VersionChecker (String repository)
-    {
-        try
-        {
+    public VersionChecker(String repository) {
+        try {
             URL url = new URL("https://api.github.com/repos/" + repository + "/releases/latest");
             URLConnection request = url.openConnection();
 
@@ -32,13 +30,10 @@ public final class VersionChecker
             request.setConnectTimeout(1000);
             request.connect();
 
-            JsonParser jsonParser = new JsonParser();
-            try (InputStream inputStream = (InputStream) request.getContent();
-                 InputStreamReader reader = new InputStreamReader(inputStream))
-            {
-                JsonElement root = jsonParser.parse(reader);
+            try (var reader = new InputStreamReader((InputStream) request.getContent())) {
+                JsonElement root = JsonParser.parseReader(reader);
                 JsonObject jsonObject = root.getAsJsonObject();
-                this.latestVersion = new Version(
+                latestVersion = new Version(
                     jsonObject.get("tag_name").getAsString(),
                     jsonObject.get("prerelease").getAsBoolean(),
                     jsonObject.get("name").getAsString(),
@@ -49,47 +44,14 @@ public final class VersionChecker
         catch (Exception ignored) {}
     }
 
-    public static class Version
-    {
-        private final String tag;
-        private final boolean preRelease;
-        private final String name;
-        private final long time;
-
-        public Version (String tag, boolean preRelease, String name, String time)
-        {
-            this.tag = tag;
-            this.preRelease = preRelease;
-            this.name = name;
-            this.time = Instant.parse(time).toEpochMilli();
-        }
-
-        public String tag ()
-        {
-            return this.tag;
-        }
-
-        public boolean preRelease ()
-        {
-            return this.preRelease;
-        }
-
-        public String name ()
-        {
-            return this.name;
-        }
-
-        public long time ()
-        {
-            return this.time;
+    public record Version(String tag, boolean preRelease, String name, long time) {
+        public Version(String tag, boolean preRelease, String name, String time) {
+            this(tag, preRelease, name, Instant.parse(time).toEpochMilli());
         }
 
         @Override
-        public boolean equals (Object version)
-        {
-            return this.tag == null || !(version instanceof Version)
-                ? super.equals(version)
-                : this.tag.equals(((Version) version).tag);
+        public boolean equals(Object o) {
+            return tag != null && o instanceof Version version && tag.equals(version.tag());
         }
     }
 }

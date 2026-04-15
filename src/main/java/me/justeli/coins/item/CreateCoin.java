@@ -7,54 +7,51 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.SplittableRandom;
 
-/* Eli @ January 30, 2022 (creation) */
-public final class CreateCoin
-{
+/**
+ * @author Eli
+ * @since January 30, 2022 (creation)
+ */
+public final class CreateCoin {
     private final Coins coins;
-
-    public CreateCoin (Coins coins)
-    {
+    public CreateCoin(Coins coins) {
         this.coins = coins;
     }
 
-    private static final SplittableRandom SPLITTABLE_RANDOM = new SplittableRandom();
+    private static final SplittableRandom RANDOM = new SplittableRandom();
 
-    public ItemStack withdrawn (double worth)
-    {
-        String name = Util.formatAmountAndCurrency(worth == 1
-            ? Config.WITHDRAWN_COIN_NAME_SINGULAR
-            : Config.WITHDRAWN_COIN_NAME_PLURAL, worth);
+    public ItemStack createWithdrawn(double worth) {
+        var plural = worth == 1? Config.WITHDRAWN_COIN_NAME_SINGULAR : Config.WITHDRAWN_COIN_NAME_PLURAL;
+        String name = Util.formatAmountAndCurrency(plural, worth);
 
-        return this.coins.getBaseCoin().withdrawn().data(CoinUtil.COINS_WORTH, worth).name(name).build();
+        return coins.getBaseCoin().cloneBaseWithdrawn()
+            .setData(CoinUtil.COINS_WORTH, worth)
+            .setName(name).build();
     }
 
-    private MetaBuilder rawDropped ()
-    {
-        MetaBuilder coin = this.coins.getBaseCoin().dropped();
-
-        if (Config.DROP_EACH_COIN || !Config.STACK_COINS)
-        {
-            return coin.data(CoinUtil.COINS_RANDOM, SPLITTABLE_RANDOM.nextInt());
+    private MetaBuilder createDropBuilder() {
+        MetaBuilder coin = coins.getBaseCoin().cloneBaseDropped();
+        if (Config.DROP_EACH_COIN || !Config.STACK_COINS) {
+            return coin.setData(CoinUtil.COINS_RANDOM, RANDOM.nextInt());
         }
         return coin;
     }
 
-    public ItemStack dropped ()
-    {
-        return rawDropped().build();
+    public ItemStack createDropped() {
+        return createDropBuilder().build();
     }
 
-    public ItemStack dropped (double increment)
-    {
-        if (increment == 1)
-            return dropped();
+    public ItemStack createDropped(double increment) {
+        if (increment == 1) {
+            return createDropped();
+        }
 
-        MetaBuilder coin = rawDropped().data(CoinUtil.COINS_INCREMENT, increment);
+        MetaBuilder coin = createDropBuilder()
+            .setData(CoinUtil.COINS_INCREMENT, increment);
+
         return coin.build();
     }
 
-    public MetaBuilder other ()
-    {
-        return this.coins.getBaseCoin().other();
+    public MetaBuilder createOther() {
+        return coins.getBaseCoin().cloneBaseOther();
     }
 }

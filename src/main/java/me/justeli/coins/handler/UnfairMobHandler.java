@@ -11,50 +11,43 @@ import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.event.entity.EntityTransformEvent;
 import org.bukkit.persistence.PersistentDataType;
 
-public final class UnfairMobHandler
-    implements Listener
-{
-    private final NamespacedKey slimeSplit;
-    private final NamespacedKey spawnerMob;
+/**
+ * @author Eli
+ * @since December 13, 2016 (creation)
+ */
+public final class UnfairMobHandler implements Listener {
+    private final NamespacedKey fromSplitKey;
+    private final NamespacedKey fromSpawnerKey;
 
-    public UnfairMobHandler (Coins coins)
-    {
-        this.slimeSplit = new NamespacedKey(coins, "coins-slime-split");
-        this.spawnerMob = new NamespacedKey(coins, "coins-spawner-mob");
+    public UnfairMobHandler(Coins coins) {
+        this.fromSplitKey = new NamespacedKey(coins, "coins-slime-split");
+        this.fromSpawnerKey = new NamespacedKey(coins, "coins-spawner-mob");
     }
 
     @EventHandler
-    public void onCreatureSpawn (CreatureSpawnEvent event)
-    {
-        if (event.getSpawnReason() == SpawnReason.SPAWNER || event.getEntityType() == EntityType.CAVE_SPIDER)
-        {
-            event.getEntity().getPersistentDataContainer().set(this.spawnerMob, PersistentDataType.INTEGER, 1);
+    void onCreatureSpawnEvent(CreatureSpawnEvent event) {
+        if (event.getSpawnReason() == SpawnReason.SPAWNER || event.getEntityType() == EntityType.CAVE_SPIDER) {
+            event.getEntity().getPersistentDataContainer().set(fromSpawnerKey, PersistentDataType.INTEGER, 1);
         }
-        else if (event.getSpawnReason() == SpawnReason.SLIME_SPLIT)
-        {
-            event.getEntity().getPersistentDataContainer().set(this.slimeSplit, PersistentDataType.INTEGER, 1);
+        else if (event.getSpawnReason() == SpawnReason.SLIME_SPLIT) {
+            event.getEntity().getPersistentDataContainer().set(fromSplitKey, PersistentDataType.INTEGER, 1);
         }
     }
 
     @EventHandler
-    public void onEntityTransformEvent (EntityTransformEvent event)
-    {
-        if (fromSpawner(event.getEntity()))
-        {
-            for (Entity entity : event.getTransformedEntities())
-            {
-                entity.getPersistentDataContainer().set(this.spawnerMob, PersistentDataType.INTEGER, 1);
+    void onEntityTransformEvent(EntityTransformEvent event) {
+        if (isFromSpawner(event.getEntity())) {
+            for (Entity entity : event.getTransformedEntities()) {
+                entity.getPersistentDataContainer().set(fromSpawnerKey, PersistentDataType.INTEGER, 1);
             }
         }
     }
 
-    public boolean fromSplit (Entity entity)
-    {
-        return entity.getPersistentDataContainer().has(this.slimeSplit, PersistentDataType.INTEGER);
+    public boolean isFromSplit(Entity entity) {
+        return entity.getPersistentDataContainer().has(fromSplitKey, PersistentDataType.INTEGER);
     }
 
-    public boolean fromSpawner (Entity entity)
-    {
-        return entity.getPersistentDataContainer().has(this.spawnerMob, PersistentDataType.INTEGER);
+    public boolean isFromSpawner(Entity entity) {
+        return entity.getPersistentDataContainer().has(fromSpawnerKey, PersistentDataType.INTEGER);
     }
 }

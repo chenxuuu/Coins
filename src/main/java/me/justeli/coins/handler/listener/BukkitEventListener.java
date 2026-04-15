@@ -7,28 +7,26 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 
-/* Eli @ September 13, 2020 (creation) */
-public final class BukkitEventListener
-    implements Listener
-{
+/**
+ * @author Eli
+ * @since September 13, 2020 (creation)
+ */
+public final class BukkitEventListener implements Listener {
     private final Coins coins;
-
-    public BukkitEventListener (Coins coins)
-    {
+    public BukkitEventListener(Coins coins) {
         this.coins = coins;
     }
 
-    @EventHandler (ignoreCancelled = true)
-    public void onPickupBukkit (EntityPickupItemEvent event)
-    {
-        if (!(event.getEntity() instanceof Player))
+    @EventHandler(ignoreCancelled = true)
+    void onEntityPickupItemEvent(EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player player)) {
             return;
+        }
 
-        PickupEvent registerEvent = new PickupEvent((Player) event.getEntity(), event.getItem());
-        this.coins.getServer().getPluginManager().callEvent(registerEvent);
+        PickupEvent registerEvent = new PickupEvent(player, event.getItem());
+        coins.getServer().getPluginManager().callEvent(registerEvent);
 
-        if (registerEvent.isCancelled())
-        {
+        if (registerEvent.isCancelled()) {
             event.setCancelled(true);
         }
     }

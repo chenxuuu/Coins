@@ -7,42 +7,37 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.ItemStack;
 
-/* Eli @ May 2, 2019 (creation) */
-public final class InventoryHandler
-    implements Listener
-{
+/**
+ * @author Eli
+ * @since May 2, 2019 (creation)
+ */
+public final class InventoryHandler implements Listener {
     private final Coins coins;
-
-    public InventoryHandler (Coins coins)
-    {
+    public InventoryHandler(Coins coins) {
         this.coins = coins;
     }
 
-    @EventHandler (ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public void onInventoryClick (InventoryClickEvent event)
-    {
-        if (event.isCancelled())
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    void onInventoryClickEvent(InventoryClickEvent event) {
+        if (event.isCancelled()) {
             return;
+        }
 
-        if (Util.isDisabledHere(event.getWhoClicked().getWorld()))
+        if (Util.isDisabledHere(event.getWhoClicked().getWorld())) {
             return;
+        }
 
-        if (!(event.getWhoClicked() instanceof Player player))
+        if (!(event.getWhoClicked() instanceof Player player)) {
             return;
+        }
 
-        if (!this.coins.getCoinUtil().isDroppedCoin(event.getCurrentItem()))
+        if (!coins.getCoinUtil().isDroppedCoin(event.getCurrentItem())) {
             return;
+        }
 
         event.setCancelled(true);
-
-        ItemStack item = event.getCurrentItem();
-
-        this.coins.getPickupHandler().giveRandomMoney(item, player);
-        if (event.getCurrentItem() == null)
-            return;
-
+        coins.getPickupHandler().depositRandomMoney(event.getCurrentItem(), player);
         event.getCurrentItem().setAmount(0);
     }
 }

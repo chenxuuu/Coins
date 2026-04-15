@@ -5,16 +5,18 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.DoubleConsumer;
 
-/* Rezz @ February 02, 2022 (creation) */
-public interface EconomyHook
-{
-    void balance (UUID uuid, DoubleConsumer balance);
-    
-    void canAfford (UUID uuid, double amount, Consumer<Boolean> canAfford);
-    
-    void withdraw (UUID uuid, double amount, Runnable success);
-    
-    void deposit (UUID uuid, double amount, Runnable success);
+/**
+ * @author Rezz
+ * @since February 02, 2022 (creation)
+ */
+public interface EconomyHook {
+    void balance(UUID uuid, DoubleConsumer balance);
 
-    Optional<String> name ();
+    void canAfford(UUID uuid, double amount, Consumer<Boolean> canAfford);
+
+    void withdraw(UUID uuid, double amount, Runnable success);
+
+    void deposit(UUID uuid, double amount, Runnable success);
+
+    Optional<String> name();
 }

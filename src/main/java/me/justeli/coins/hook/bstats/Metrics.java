@@ -3,53 +3,47 @@ package me.justeli.coins.hook.bstats;
 import me.justeli.coins.Coins;
 import me.justeli.coins.config.Config;
 import me.justeli.coins.config.Settings;
-import me.justeli.coins.util.VersionLib;
+import me.justeli.coins.util.VersionUtil;
 import org.bstats.charts.SimplePie;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Locale;
 import java.util.function.Consumer;
 
-/* Eli @ July 09, 2021 (creation) */
-public final class Metrics
-{
+/**
+ * @author Eli
+ * @since July 09, 2021 (creation)
+ */
+public final class Metrics {
     private final Coins coins;
-
-    public Metrics (Coins coins)
-    {
+    public Metrics(Coins coins) {
         this.coins = coins;
     }
 
-    public static void metrics (JavaPlugin plugin, final Consumer<Metric> consumer)
-    {
+    public static void metrics(JavaPlugin plugin, final Consumer<Metric> consumer) {
         org.bstats.bukkit.Metrics metrics = new org.bstats.bukkit.Metrics(plugin, 831);
         consumer.accept(new Metric(metrics));
     }
 
-    public static class Metric
-    {
+    public static class Metric {
         private final org.bstats.bukkit.Metrics metrics;
 
-        public Metric (org.bstats.bukkit.Metrics metrics)
-        {
+        public Metric(org.bstats.bukkit.Metrics metrics) {
             this.metrics = metrics;
         }
 
-        public void add (String key, Object value)
-        {
-            if (value == null || value.toString() == null)
+        public void add(String key, Object value) {
+            if (value == null || value.toString() == null) {
                 return;
+            }
 
             metrics.addCustomChart(new SimplePie(key, value::toString));
         }
     }
 
-    public void register ()
-    {
-        metrics(this.coins, metrics ->
-        {
-            metrics.add("language", Config.LANGUAGE.toLowerCase(Locale.ROOT));
+    public void register() {
+        metrics(coins, metrics -> {
+            metrics.add("language", Config.LANGUAGE.toLowerCase());
             metrics.add("currencySymbol", Config.CURRENCY_SYMBOL);
             metrics.add("coinItem", Config.COIN_ITEM);
             metrics.add("enchantedCoin", Config.ENCHANTED_COIN);
@@ -83,11 +77,9 @@ public final class Metrics
             metrics.add("dropOnDeath", Config.DROP_ON_DEATH);
             metrics.add("deathMessage", Config.DEATH_MESSAGE);
             metrics.add("location-limit-hours", Config.LOCATION_LIMIT_HOURS);
-
             metrics.add("usingSkullTexture", Config.SKULL_TEXTURE != null && !Config.SKULL_TEXTURE.isEmpty());
-            metrics.add("usingPaper", VersionLib.isPaper());
-            metrics.add("usingMythicMobs", this.coins.mmHook().isPresent());
-
+            metrics.add("usingPaper", VersionUtil.isPaper());
+            metrics.add("usingMythicMobs", coins.mmHook().isPresent());
             metrics.add("droppedCoinName", Config.DROPPED_COIN_NAME);
             metrics.add("withdrawnCoinNamesSingular", Config.WITHDRAWN_COIN_NAME_SINGULAR);
             metrics.add("withdrawnCoinNamesPlural", Config.WITHDRAWN_COIN_NAME_PLURAL);
@@ -97,13 +89,12 @@ public final class Metrics
             metrics.add("checkForUpdates", Config.CHECK_FOR_UPDATES);
             metrics.add("enchantIncrement", Config.ENCHANT_INCREMENT);
             metrics.add("usingLegacyKeysNew", Settings.USING_LEGACY_KEYS);
+            metrics.add("economyHook", coins.getEconomy().name().orElse("None"));
 
-            Plugin mm = this.coins.getServer().getPluginManager().getPlugin("MythicMobs");
-            if (mm != null)
-            {
+            Plugin mm = coins.getServer().getPluginManager().getPlugin("MythicMobs");
+            if (mm != null) {
                 metrics.add("mythicMobsVersion", mm.getDescription().getVersion());
             }
-            metrics.add("economyHook", this.coins.economy().name().orElse("None"));
         });
     }
 }

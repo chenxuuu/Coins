@@ -7,27 +7,24 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
-/* Eli @ September 13, 2020 (creation) */
-public final class PickupEvent
-    extends Event
-    implements Cancellable
-{
+/**
+ * @author Eli
+ * @since September 13, 2020 (creation)
+ */
+public final class PickupEvent extends Event implements Cancellable {
     private final Player player;
     private final Item item;
 
-    public PickupEvent (Player player, Item item)
-    {
+    public PickupEvent(Player player, Item item) {
         this.player = player;
         this.item = item;
     }
 
-    public Player getPlayer ()
-    {
+    public Player getPlayer() {
         return player;
     }
 
-    public Item getItem ()
-    {
+    public Item getItem() {
         return item;
     }
 
@@ -36,14 +33,12 @@ public final class PickupEvent
     private boolean cancelled;
 
     @Override
-    public boolean isCancelled ()
-    {
+    public boolean isCancelled() {
         return cancelled;
     }
 
     @Override
-    public void setCancelled (boolean cancel)
-    {
+    public void setCancelled(boolean cancel) {
         this.cancelled = cancel;
     }
 
@@ -51,14 +46,11 @@ public final class PickupEvent
 
     private static final HandlerList HANDLERS = new HandlerList();
 
-    @NotNull
-    public HandlerList getHandlers ()
-    {
+    public @NotNull HandlerList getHandlers() {
         return HANDLERS;
     }
 
-    public static HandlerList getHandlerList ()
-    {
+    public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 }

@@ -10,47 +10,47 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 
-/* Eli @ February 4, 2017 (creation) */
-public final class InteractionHandler
-    implements Listener
-{
+/**
+ * @author Eli
+ * @since February 4, 2017 (creation)
+ */
+public final class InteractionHandler implements Listener {
     private final Coins coins;
-
-    public InteractionHandler (Coins coins)
-    {
+    public InteractionHandler(Coins coins) {
         this.coins = coins;
     }
 
     @EventHandler
-    public void onPlayerInteract (PlayerInteractEvent event)
-    {
-        if (event.getAction() == Action.PHYSICAL)
+    void onPlayerInteractEvent(PlayerInteractEvent event) {
+        if (event.getAction() == Action.PHYSICAL) {
             return;
+        }
 
-        if (!this.coins.getCoinUtil().isWithdrawnCoin(event.getItem()))
+        if (!coins.getCoinUtil().isWithdrawnCoin(event.getItem())) {
             return;
+        }
 
         Player player = event.getPlayer();
 
         // because of .setAmount(0) AND Container, players have to drop coin instead
-        if (!player.hasPermission(PermissionNode.WITHDRAW))
-        {
+        if (!player.hasPermission(PermissionNode.WITHDRAW)) {
             event.setCancelled(true);
             return;
         }
 
-        if (event.getClickedBlock() == null || !(event.getClickedBlock().getState() instanceof Container))
-        {
-            event.setCancelled(true);
-            double amount = this.coins.getCoinUtil().getValue(event.getItem());
-
-            if (event.getItem() == null)
-                return;
-
-            event.getItem().setAmount(0);
-
-            this.coins.getPickupHandler().giveMoney(player, amount);
-            Util.playCoinPickupSound(player);
+        if (event.getClickedBlock() != null && event.getClickedBlock().getState() instanceof Container) {
+            return;
         }
+
+        event.setCancelled(true);
+        if (event.getItem() == null) {
+            return;
+        }
+
+        double amount = coins.getCoinUtil().getValue(event.getItem());
+        event.getItem().setAmount(0);
+
+        coins.getPickupHandler().depositMoney(player, amount);
+        Util.playCoinPickupSound(player);
     }
 }

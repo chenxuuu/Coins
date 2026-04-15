@@ -6,13 +6,13 @@ import org.bukkit.persistence.PersistentDataType;
 
 import java.util.Optional;
 
-/* Eli @ January 30, 2022 (creation) */
-public final class CoinUtil
-{
+/**
+ * @author Eli
+ * @since January 30, 2022 (creation)
+ */
+public final class CoinUtil {
     private final Coins coins;
-
-    public CoinUtil (Coins coins)
-    {
+    public CoinUtil(Coins coins) {
         this.coins = coins;
     }
 
@@ -31,42 +31,41 @@ public final class CoinUtil
     public static final String COINS_RANDOM = "coins-random";
     public static final String COINS_INCREMENT = "coins-increment";
 
-    public boolean isCoin (ItemStack item)
-    {
-        if (item == null)
+    public boolean isCoin(ItemStack item) {
+        if (item == null) {
             return false;
+        }
 
-        return this.coins.meta(item).data(COINS_TYPE, PersistentDataType.INTEGER).isPresent();
+        return coins.meta(item).setData(COINS_TYPE, PersistentDataType.INTEGER).isPresent();
     }
 
-    public boolean isDroppedCoin (ItemStack item)
-    {
-        if (item == null)
+    public boolean isDroppedCoin(ItemStack item) {
+        if (item == null) {
             return false;
+        }
 
-        return this.coins.meta(item).data(COINS_TYPE, PersistentDataType.INTEGER).orElse(0) == TYPE_DROPPED;
+        return coins.meta(item).setData(COINS_TYPE, PersistentDataType.INTEGER).orElse(0) == TYPE_DROPPED;
     }
 
-    public boolean isWithdrawnCoin (ItemStack item)
-    {
-        if (item == null)
+    public boolean isWithdrawnCoin(ItemStack item) {
+        if (item == null) {
             return false;
+        }
 
-        return this.coins.meta(item).data(COINS_TYPE, PersistentDataType.INTEGER).orElse(0) == TYPE_WITHDRAWN;
+        return coins.meta(item).setData(COINS_TYPE, PersistentDataType.INTEGER).orElse(0) == TYPE_WITHDRAWN;
     }
 
-    public double getValue (ItemStack item)
-    {
-        if (item == null)
+    public double getValue(ItemStack item) {
+        if (item == null) {
             return 0;
+        }
 
-        Optional<Double> worth = this.coins.meta(item).data(COINS_WORTH, PersistentDataType.DOUBLE);
-        return worth.map(value -> value * item.getAmount()).orElse(0.0);
+        Optional<Double> worth = coins.meta(item).setData(COINS_WORTH, PersistentDataType.DOUBLE);
+        return worth.map(value -> value * item.getAmount()).orElse(0D);
 
     }
 
-    public double getIncrement (ItemStack item)
-    {
-        return this.coins.meta(item).data(COINS_INCREMENT, PersistentDataType.DOUBLE).orElse(1D);
+    public double getIncrement(ItemStack item) {
+        return coins.meta(item).setData(COINS_INCREMENT, PersistentDataType.DOUBLE).orElse(1D);
     }
 }

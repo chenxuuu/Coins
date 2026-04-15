@@ -6,25 +6,22 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerAttemptPickupItemEvent;
 
-/* Eli @ September 13, 2020 (creation) */
-public final class PaperEventListener
-    implements Listener
-{
+/**
+ * @author Eli
+ * @since September 13, 2020 (creation)
+ */
+public final class PaperEventListener implements Listener {
     private final Coins coins;
-
-    public PaperEventListener (Coins coins)
-    {
+    public PaperEventListener(Coins coins) {
         this.coins = coins;
     }
 
     @EventHandler
-    public void onPickupPaper (PlayerAttemptPickupItemEvent event)
-    {
+    void onPlayerAttemptPickupItemEvent(PlayerAttemptPickupItemEvent event) {
         PickupEvent registerEvent = new PickupEvent(event.getPlayer(), event.getItem());
-        this.coins.getServer().getPluginManager().callEvent(registerEvent);
+        coins.getServer().getPluginManager().callEvent(registerEvent);
 
-        if (registerEvent.isCancelled())
-        {
+        if (registerEvent.isCancelled()) {
             event.setCancelled(true);
         }
     }

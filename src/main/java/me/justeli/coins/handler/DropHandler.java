@@ -22,117 +22,112 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.SplittableRandom;
 
-public final class DropHandler
-    implements Listener
-{
+/**
+ * @author Eli
+ * @since December 13, 2016 (creation)
+ */
+public final class DropHandler implements Listener {
     private final Coins coins;
-    private final NamespacedKey playerDamage;
+    private final NamespacedKey playerDamageKey;
 
-    public DropHandler (Coins coins)
-    {
+    public DropHandler(Coins coins) {
         this.coins = coins;
-        this.playerDamage = new NamespacedKey(coins, "coins-player-damage");
+        this.playerDamageKey = new NamespacedKey(coins, "coins-player-damage");
     }
 
-    private final HashMap<Location, Integer> locationAmountCache = new HashMap<>();
-    private final HashMap<Location, Long> locationLastTimeCache = new HashMap<>();
+    private final Map<Location, Integer> locationAmountCache = new HashMap<>();
+    private final Map<Location, Long> locationLastTimeCache = new HashMap<>();
 
     private static final SplittableRandom RANDOM = new SplittableRandom();
 
-    @EventHandler (priority = EventPriority.HIGH)
-    public void onEntityDeath (EntityDeathEvent event)
-    {
-        if (this.coins.isDisabled())
+    @EventHandler(priority = EventPriority.HIGH)
+    void onEntityDeathEvent(EntityDeathEvent event) {
+        if (coins.isDisabled()) {
             return;
-
-        LivingEntity dead = event.getEntity();
-
-        if (Util.isDisabledHere(dead.getWorld()))
-            return;
-
-        if (this.coins.mmHook().isPresent() && Config.DISABLE_MYTHIC_MOB_HANDLING && this.coins.mmHook().get().isMythicMob(dead))
-            return;
-
-        if (Config.LOSE_ON_DEATH && dead instanceof Player)
-        {
-            loseOnDeathHandler((Player) dead);
         }
 
-        if (Config.DROP_WITH_ANY_DEATH)
-        {
-            mobChecker(dead, null);
+        LivingEntity dead = event.getEntity();
+        if (Util.isDisabledHere(dead.getWorld())) {
+            return;
+        }
+
+        if (coins.mmHook().isPresent() && Config.DISABLE_MYTHIC_MOB_HANDLING && coins.mmHook().get().isMythicMob(dead)) {
+            return;
+        }
+
+        if (Config.LOSE_ON_DEATH && dead instanceof Player player) {
+            handleLosingOnDeath(player);
+        }
+
+        if (Config.DROP_WITH_ANY_DEATH) {
+            handleDropCheck(dead, null);
             return;
         }
 
         AttributeInstance maxHealth = dead.getAttribute(Attribute.GENERIC_MAX_HEALTH);
-        if (maxHealth == null)
+        if (maxHealth == null) {
             return;
+        }
 
-        if (Config.PERCENTAGE_PLAYER_HIT > 0 && getPlayerDamage(dead) / maxHealth.getValue() < Config.PERCENTAGE_PLAYER_HIT)
+        if (Config.PERCENTAGE_PLAYER_HIT > 0 && getPlayerDamage(dead) / maxHealth.getValue() < Config.PERCENTAGE_PLAYER_HIT) {
             return;
+        }
 
         Optional<Player> attacker = Util.getRootDamage(dead);
-        if (attacker.isEmpty())
+        if (attacker.isEmpty()) {
             return;
+        }
 
-        mobChecker(dead, attacker.get());
+        handleDropCheck(dead, attacker.get());
     }
 
-    private void loseOnDeathHandler (@NotNull Player dead)
-    {
+    private void handleLosingOnDeath(@NotNull Player dead) {
         double random = Util.getRandomTakeAmount();
-        this.coins.economy().balance(dead.getUniqueId(), balance ->
-        {
-            if (balance <= 0)
+        coins.getEconomy().balance(dead.getUniqueId(), balance -> {
+            if (balance <= 0) {
                 return;
+            }
 
-            double take = Util.round(
-                Config.TAKE_PERCENTAGE
-                    ? (random / 100) * balance
-                    : random
-            );
-
-            if (take <= 0)
+            double take = Util.round(Config.TAKE_PERCENTAGE? (random / 100) * balance : random);
+            if (take <= 0) {
                 return;
+            }
 
-            this.coins.economy().withdraw(dead.getUniqueId(), take, () ->
-            {
-                Util.send(Config.DEATH_MESSAGE_POSITION, dead, Config.DEATH_MESSAGE, take);
-
-                if (Config.DROP_ON_DEATH && dead.getLocation().getWorld() != null)
-                {
+            coins.getEconomy().withdraw(dead.getUniqueId(), take, () -> {
+                Util.sendMessage(dead, Config.DEATH_MESSAGE, Config.DEATH_MESSAGE_POSITION, take);
+                if (Config.DROP_ON_DEATH && dead.getLocation().getWorld() != null) {
                     dead.getWorld().dropItem(
                         dead.getLocation(),
-                        this.coins.getCreateCoin().other().data(CoinUtil.COINS_WORTH, take).build()
+                        coins.getCreateCoin().createOther().setData(CoinUtil.COINS_WORTH, take).build()
                     );
                 }
             });
         });
     }
 
-    private void mobChecker (@NotNull Entity dead, @Nullable Player attacker)
-    {
-        if (Config.PREVENT_SPLITS && this.coins.getUnfairMobHandler().fromSplit(dead))
+    private void handleDropCheck(@NotNull Entity dead, @Nullable Player attacker) {
+        if (Config.PREVENT_SPLITS && coins.getUnfairMobHandler().isFromSplit(dead)) {
             return;
-
-        if (!Config.SPAWNER_DROP && this.coins.getUnfairMobHandler().fromSpawner(dead))
-        {
-            if (attacker == null || !attacker.hasPermission(PermissionNode.SPAWNER))
-                return;
         }
 
-        if (Config.MOB_MULTIPLIER.containsKey(dead.getType()) && !(dead instanceof Player))
-        {
-            mobHandler(dead, attacker);
+        if (!Config.SPAWNER_DROP && coins.getUnfairMobHandler().isFromSpawner(dead)) {
+            if (attacker == null || !attacker.hasPermission(PermissionNode.SPAWNER)) {
+                return;
+            }
+        }
+
+        if (Config.MOB_MULTIPLIER.containsKey(dead.getType()) && !(dead instanceof Player)) {
+            handleDrop(dead, attacker);
             return;
         }
 
@@ -141,173 +136,158 @@ public final class DropHandler
         boolean isPlayer = dead instanceof Player;
 
         // if none of the possible categories
-        if (!isHostile && !isPassive && !isPlayer)
-            return;
-
-        if (!Config.HOSTILE_DROP && isHostile)
-            return;
-
-        if (!Config.PASSIVE_DROP && isPassive)
-            return;
-
-        if (!Config.PLAYER_DROP && isPlayer)
-            return;
-
-        if (isPlayer)
-        {
-            this.coins.economy().balance(dead.getUniqueId(), balance -> {
-                if (balance > 0) {
-                    mobHandler(dead, attacker);
-                }
-            });
+        if (!isHostile && !isPassive && !isPlayer) {
             return;
         }
 
-        mobHandler(dead, attacker);
+        if (!Config.HOSTILE_DROP && isHostile) {
+            return;
+        }
+
+        if (!Config.PASSIVE_DROP && isPassive) {
+            return;
+        }
+
+        if (!Config.PLAYER_DROP && isPlayer) {
+            return;
+        }
+
+        handleDrop(dead, attacker);
     }
 
-    private void mobHandler (@NotNull Entity dead, @Nullable Player attacker)
-    {
-        if (Config.PREVENT_ALTS && attacker != null && dead instanceof Player victim)
-        {
-            InetSocketAddress address1 = attacker.getAddress();
-            InetSocketAddress address2 = victim.getAddress();
-
-            if (address1 != null && address2 != null && address1.getAddress().getHostAddress().equals(address2.getAddress().getHostAddress()))
+    private void handleDrop(@NotNull Entity dead, @Nullable Player attacker) {
+        if (Config.PREVENT_ALTS && attacker != null && dead instanceof Player victim) {
+            var a1 = attacker.getAddress();
+            var a2 = victim.getAddress();
+            if (a1 != null && a2 != null && a1.getAddress().getHostAddress().equals(a2.getAddress().getHostAddress())) {
                 return;
+            }
         }
 
-        if (RANDOM.nextDouble() > Config.DROP_CHANCE)
+        if (RANDOM.nextDouble() > Config.DROP_CHANCE) {
             return;
+        }
 
-        if (!isLocationAvailableAndSet(dead))
+        if (!isLocationAvailableAndSet(dead)) {
             return;
+        }
 
-        drop(
-            Config.MOB_MULTIPLIER.getOrDefault(dead.getType(), 1),
-            attacker,
-            dead.getLocation(),
-            Enchantment.LOOT_BONUS_MOBS
-        );
+        dropCoins(Config.MOB_MULTIPLIER.getOrDefault(dead.getType(), 1), attacker, dead.getLocation());
     }
 
-    private boolean isLocationAvailableAndSet (Entity dead)
-    {
-        if (Config.LIMIT_FOR_LOCATION < 1)
+    private boolean isLocationAvailableAndSet(Entity dead) {
+        if (Config.LIMIT_FOR_LOCATION < 1) {
             return true;
+        }
 
         Location location = dead.getLocation().getBlock().getLocation();
-        long previousTime = this.locationLastTimeCache.computeIfAbsent(location, empty -> 0L);
+        long previousTime = locationLastTimeCache.computeIfAbsent(location, empty -> 0L);
 
-        if (previousTime > System.currentTimeMillis() - 3600000 * Config.LOCATION_LIMIT_HOURS)
-        {
+        // todo improve
+        if (previousTime > System.currentTimeMillis() - 3600000 * Config.LOCATION_LIMIT_HOURS) {
             // within the past hour
-            int killAmount = this.locationAmountCache.computeIfAbsent(location, empty -> 0);
+            int killAmount = locationAmountCache.computeIfAbsent(location, empty -> 0);
 
-            this.locationAmountCache.put(location, killAmount + 1);
-            this.locationLastTimeCache.put(location, System.currentTimeMillis());
+            locationAmountCache.put(location, killAmount + 1);
+            locationLastTimeCache.put(location, System.currentTimeMillis());
 
             return killAmount < Config.LIMIT_FOR_LOCATION;
         }
 
-        this.locationAmountCache.put(location, 1);
-        this.locationLastTimeCache.put(location, System.currentTimeMillis());
+        locationAmountCache.put(location, 1);
+        locationLastTimeCache.put(location, System.currentTimeMillis());
         return true;
     }
 
-    @EventHandler (ignoreCancelled = true,
-                   priority = EventPriority.MONITOR)
-    public void onBlockBreak (BlockBreakEvent event)
-    {
-        if (this.coins.isDisabled() || Util.isDisabledHere(event.getBlock().getWorld()))
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    void onBlockBreakEvent(BlockBreakEvent event) {
+        if (coins.isDisabled() || Util.isDisabledHere(event.getBlock().getWorld())) {
             return;
+        }
 
-        if (Config.MINE_PERCENTAGE == 0)
+        if (Config.MINE_PERCENTAGE == 0) {
             return;
+        }
 
-        if (event.getPlayer().getGameMode() != GameMode.SURVIVAL || blockDropsSameItem(event))
+        if (event.getPlayer().getGameMode() != GameMode.SURVIVAL || isBlockDropSameItem(event)) {
             return;
+        }
 
         int multiplier = Config.BLOCK_DROPS.computeIfAbsent(event.getBlock().getType(), empty -> 0);
-        if (multiplier == 0)
+        if (multiplier == 0) {
             return;
+        }
 
-        if (RANDOM.nextDouble() > Config.MINE_PERCENTAGE)
+        if (RANDOM.nextDouble() > Config.MINE_PERCENTAGE) {
             return;
+        }
 
-        this.coins.sync(1, () -> drop(
+        // todo i believe this can be replaced with World#dropItemNaturally without delay
+        coins.sync(1, () -> dropCoins(
             multiplier,
             event.getPlayer(),
-            event.getBlock().getLocation().clone().add(0.5, 0.5, 0.5),
-            Enchantment.LOOT_BONUS_BLOCKS
+            event.getBlock().getLocation().clone().add(0.5, 0.5, 0.5)
         ));
     }
 
-    private boolean blockDropsSameItem (BlockBreakEvent event)
-    {
+    // if the block that is mined is exactly the same as the items it drops
+    private boolean isBlockDropSameItem(BlockBreakEvent event) {
         Material type = event.getBlock().getType();
-        return event.getBlock().getDrops(event.getPlayer().getInventory().getItemInMainHand())
-            .stream()
-            .anyMatch(item -> item.getType() == type);
+        for (ItemStack item : event.getBlock().getDrops(event.getPlayer().getInventory().getItemInMainHand())) {
+            if (item.getType() == type) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    private void drop (int amount, @Nullable Player player, @NotNull Location location, @NotNull Enchantment enchantment)
-    {
-        if (location.getWorld() == null)
+    private void dropCoins(int amount, @Nullable Player player, @NotNull Location location) {
+        if (location.getWorld() == null) {
             return;
+        }
 
         double increment = 1;
-
-        if (player != null && Config.ENCHANT_INCREMENT > 0)
-        {
-            int lootingLevel = player.getInventory().getItemInMainHand().getEnchantmentLevel(enchantment);
-            if (lootingLevel > 0)
-            {
+        if (player != null && Config.ENCHANT_INCREMENT > 0) {
+            int lootingLevel = player.getInventory().getItemInMainHand().getEnchantmentLevel(Enchantment.LOOT_BONUS_BLOCKS);
+            if (lootingLevel > 0) {
                 increment += lootingLevel * Config.ENCHANT_INCREMENT;
             }
         }
 
-        if (Config.DROP_EACH_COIN)
-        {
-            amount *= (int) ((Util.getRandomMoneyAmount() + 0.5) * increment);
+        if (Config.DROP_EACH_COIN) {
+            amount *= (int) ((Util.getRandomMoneyAmount() + .5) * increment);
             increment = 1;
         }
 
-        if (player != null)
-        {
+        if (player != null) {
             amount *= (int) Util.getMultiplier(player);
         }
 
-        for (int i = 0; i < amount; i++)
-        {
-            location.getWorld().dropItem(
-                location,
-                this.coins.getCreateCoin().dropped(increment)
-            );
+        for (int i = 0; i < amount; i++) {
+            location.getWorld().dropItem(location, coins.getCreateCoin().createDropped(increment));
         }
     }
 
-    @EventHandler (priority = EventPriority.LOW)
-    public void onEntityDamage (EntityDamageByEntityEvent event)
-    {
-        if (Util.getRootDamage(event).isEmpty())
+    @EventHandler(priority = EventPriority.LOW)
+    void onEntityDamageByEntityEvent(EntityDamageByEntityEvent event) {
+        if (Util.getRootDamage(event).isEmpty()) {
             return;
+        }
 
         double playerDamage = getPlayerDamage(event.getEntity());
         event.getEntity().getPersistentDataContainer().set(
-            this.playerDamage,
+            playerDamageKey,
             PersistentDataType.DOUBLE,
             playerDamage + event.getFinalDamage()
         );
     }
 
-    private double getPlayerDamage (@NotNull Entity entity)
-    {
-        return entity.getPersistentDataContainer().getOrDefault(this.playerDamage, PersistentDataType.DOUBLE, 0D);
+    private double getPlayerDamage(@NotNull Entity entity) {
+        return entity.getPersistentDataContainer().getOrDefault(playerDamageKey, PersistentDataType.DOUBLE, 0D);
     }
 
     @EventHandler
-    public void onPlayerJoinEvent (PlayerJoinEvent event) {
+    void onPlayerJoinEvent(PlayerJoinEvent event) {
         Util.resetMultiplier(event.getPlayer());
     }
 }
