@@ -298,6 +298,7 @@ public final class Settings {
     }
 
     // todo also parse with Registry.SOUNDS
+    //  this should also allow for custom sounds, not sure
     private Optional<Sound> getSound(String name, String configKey) {
         try {
             return Optional.of(Sound.valueOf(name.toUpperCase().replace(" ", "_")));

@@ -57,7 +57,7 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
         }
 
         switch (args[0].toLowerCase()) {
-            case "reload":
+            case "reload" -> {
                 if (checkPermission(sender, Permissions.hasCommandReload(sender))) {
                     long ms = System.currentTimeMillis();
 
@@ -72,8 +72,8 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
                         sender.sendMessage(Message.CHECK_SETTINGS.toString());
                     }
                 }
-                break;
-            case "settings":
+            }
+            case "settings" -> {
                 if (checkPermission(sender, Permissions.hasCommandSettings(sender))) {
                     int page = args.length > 1? Util.parseInt(args[1]).orElse(1) : 1;
                     TreeSet<String> keys = coins.getSettings().getKeys();
@@ -84,27 +84,25 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
                         sender.sendMessage(Util.color(setting));
                     }
                 }
-                break;
-            case "drop":
+            }
+            case "drop" -> {
                 if (checkPermission(sender, Permissions.hasCommandDrop(sender))) {
                     handleDropCoins(sender, args);
                 }
-                break;
-            case "remove":
+            }
+            case "remove" -> {
                 if (checkPermission(sender, Permissions.hasCommandRemove(sender))) {
                     handleRemoveCoins(sender, args);
                 }
-                break;
-            case "lang":
-            case "language":
+            }
+            case "lang", "language" -> {
                 if (checkPermission(sender, Permissions.hasCommandLanguage(sender))) {
                     for (Message message : Message.values()) {
                         sender.sendMessage(message.toString());
                     }
                 }
-                break;
-            case "version":
-            case "update":
+            }
+            case "version", "update" -> {
                 if (checkPermission(sender, Permissions.hasCommandVersion(sender))) {
                     sender.sendMessage(String.format(COINS_TITLE, "Version"));
 
@@ -128,8 +126,8 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
                         ));
                     }
                 }
-                break;
-            case "toggle":
+            }
+            case "toggle" -> {
                 if (checkPermission(sender, Permissions.hasCommandToggle(sender))) {
                     Message message = coins.toggleDisabled()? Message.ENABLED : Message.DISABLED;
                     sender.sendMessage(Message.GLOBALLY_DISABLED_INFORM.replace(message.toString()));
@@ -137,10 +135,8 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
                         sender.sendMessage(Message.DISABLED_DESCRIPTION.toString());
                     }
                 }
-                break;
-            default:
-                handleSendHelp(sender);
-                break;
+            }
+            default -> handleSendHelp(sender);
         }
 
         return true;
@@ -159,53 +155,64 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, @NotNull String[] args) {
         List<String> list = new ArrayList<>();
         if (args.length == 1) {
-            if (Permissions.hasCommandDrop(sender)) {
+            String remaining = args[0].toLowerCase();
+            if (Permissions.hasCommandDrop(sender) && "drop".startsWith(remaining)) {
                 list.add("drop");
             }
-            if (Permissions.hasCommandReload(sender)) {
+            if (Permissions.hasCommandReload(sender) && "reload".startsWith(remaining)) {
                 list.add("reload");
             }
-            if (Permissions.hasCommandSettings(sender)) {
+            if (Permissions.hasCommandSettings(sender) && "settings".startsWith(remaining)) {
                 list.add("settings");
             }
-            if (Permissions.hasCommandVersion(sender)) {
+            if (Permissions.hasCommandVersion(sender) && "version".startsWith(remaining)) {
                 list.add("version");
             }
-            if (Permissions.hasCommandRemove(sender)) {
+            if (Permissions.hasCommandRemove(sender) && "remove".startsWith(remaining)) {
                 list.add("remove");
             }
-            if (Permissions.hasCommandToggle(sender)) {
+            if (Permissions.hasCommandToggle(sender) && "toggle".startsWith(remaining)) {
                 list.add("toggle");
             }
         }
         else if (args.length == 2) {
+            String remaining = args[1].toLowerCase();
             if (args[0].equalsIgnoreCase("remove") && Permissions.hasCommandRemove(sender)) {
-                list.add("all");
+                if ("all".startsWith(remaining)) {
+                    list.add("all");
+                }
                 list.add("[radius]");
             }
             if (args[0].equalsIgnoreCase("drop") && Permissions.hasCommandDrop(sender)) {
                 for (Player onlinePlayer : coins.getServer().getOnlinePlayers()) {
-                    list.add(onlinePlayer.getName());
+                    if (onlinePlayer.getName().toLowerCase().startsWith(remaining)) {
+                        list.add(onlinePlayer.getName());
+                    }
                 }
-                list.add("<x,y,z>");
-                list.add("<x,y,z,world>");
+                if (remaining.isEmpty() || remaining.contains(",") || Util.parseInt(remaining).isPresent()) {
+                    list.add("<x,y,z>");
+                    list.add("<x,y,z,world>");
+                }
             }
             if (args[0].equalsIgnoreCase("settings") && Permissions.hasCommandSettings(sender)) {
-                list.add("1");
-                list.add("2");
-                list.add("3");
-                list.add("4");
-                list.add("5");
-                list.add("6");
+                for (int i = 1; i < 8; i++) {
+                    list.add(Integer.toString(i));
+                }
             }
         }
         else if (args.length == 3) {
             if (args[0].equalsIgnoreCase("remove") && Permissions.hasCommandRemove(sender)) {
                 list.add("<amount>");
             }
+            else if (args[0].equalsIgnoreCase("drop") && Permissions.hasCommandDrop(sender)) {
+                list.add("<amount>");
+            }
         }
         else if (args.length == 4) {
             if (args[0].equalsIgnoreCase("remove") && Permissions.hasCommandRemove(sender)) {
+                list.add("[radius]");
+            }
+            else if (args[0].equalsIgnoreCase("drop") && Permissions.hasCommandDrop(sender)) {
                 list.add("[radius]");
             }
         }

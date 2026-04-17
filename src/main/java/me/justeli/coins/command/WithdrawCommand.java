@@ -13,7 +13,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -101,15 +100,17 @@ public final class WithdrawCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private static final List<String> VALUE_ARGUMENT = List.of("<value>");
+    private static final List<String> AMOUNT_ARGUMENT = List.of("[amount]");
+
     @Override
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, @NotNull String[] args) {
-        List<String> numbers = new ArrayList<>();
         if (args.length == 1) {
-            numbers.add("<worth (1 to " + Config.MAX_WITHDRAW_AMOUNT.intValue() + ")>");
+            return VALUE_ARGUMENT;
         }
         else if (args.length == 2) {
-            numbers.add("[amount]");
+            return AMOUNT_ARGUMENT;
         }
-        return numbers;
+        return List.of();
     }
 }

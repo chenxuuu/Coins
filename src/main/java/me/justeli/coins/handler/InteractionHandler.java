@@ -23,8 +23,10 @@ public final class InteractionHandler implements Listener {
 
     @EventHandler
     void onPlayerInteractEvent(PlayerInteractEvent event) {
-        if (event.getAction() == Action.PHYSICAL) {
-            return;
+        switch (event.getAction()) {
+            case PHYSICAL, LEFT_CLICK_AIR -> {
+                return;
+            }
         }
 
         if (!coins.getCoinMeta().isWithdrawnCoin(event.getItem())) {
