@@ -101,10 +101,10 @@ drop-each-coin: false
 stack-coins: false
 
 # Should a sound be played when a coin is picked up? If so, what should that sound be? And
-#  at what pitch and volume should it be played at?
-# Sounds: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html
+#  at what pitch and volume should it be played? Use a namespaced key for the sound. One
+#  location to find this is at the suggestions of /playsound. Can also be custom.
 pickup-sound: true
-sound-name: 'ITEM_ARMOR_EQUIP_GOLD'
+sound-name: 'minecraft:item.armor.equip_gold'
 sound-pitch: 0.30
 sound-volume: 0.50
 

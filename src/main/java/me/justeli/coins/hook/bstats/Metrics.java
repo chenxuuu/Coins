@@ -62,7 +62,7 @@ public final class Metrics {
             metrics.add("passiveDrop", Config.PASSIVE_DROP);
             metrics.add("preventSplits", Config.PREVENT_SPLITS);
             metrics.add("soundEnabled", Config.PICKUP_SOUND);
-            metrics.add("pickupSound", Config.SOUND_NAME);
+            metrics.add("pickupSound", Config.SOUND_NAME.toString());
             metrics.add("soundPitch", Config.SOUND_PITCH);
             metrics.add("soundVolume", Config.SOUND_VOLUME);
             metrics.add("dropChance", Config.DROP_CHANCE * 100 + "%");

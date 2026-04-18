@@ -116,7 +116,7 @@ public final class Util {
 
         player.playSound(
             player.getEyeLocation(),
-            Config.SOUND_NAME,
+            Config.SOUND_NAME.toString(),
             volume <= 0? .3F : volume,
             pitch <= 0? .3F : pitch
         );

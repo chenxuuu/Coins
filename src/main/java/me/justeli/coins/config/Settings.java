@@ -6,6 +6,8 @@ import me.justeli.coins.Coins;
 import me.justeli.coins.util.Permissions;
 import me.justeli.coins.util.Util;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -162,15 +164,22 @@ public final class Settings {
                     configValue = new HashSet<>(stringList);
                 }
                 else if (configClass == Map.class) {
-                    Map<String, Object> map = config.getConfigurationSection(configKey).getValues(false);
+                    var section = config.getConfigurationSection(configKey);
+                    if (section == null) {
+                        continue;
+                    }
+                    Map<String, Object> map = section.getValues(false);
                     Map<String, Integer> configMap = new HashMap<>();
 
                     for (Map.Entry<String, Object> mapLoop : map.entrySet()) {
-                        configMap.put(mapLoop.getKey().toUpperCase().replace(" ", "_"), Util.parseInt(mapLoop.getValue().toString()).orElse(1));
+                        configMap.put(
+                            mapLoop.getKey().toUpperCase().replace(" ", "_"),
+                            Util.parseInt(mapLoop.getValue().toString()).orElse(1)
+                        );
                     }
                     configValue = configMap;
                 }
-                else if (configClass == String.class || configClass == Material.class || configClass == Sound.class || configClass == MessagePosition.class) {
+                else if (configClass == String.class || configClass == Material.class || configClass == SoundKey.class || configClass == MessagePosition.class) {
                     String value = config.getString(configKey);
                     if (value == null) {
                         throw new NullPointerException();
@@ -178,8 +187,8 @@ public final class Settings {
                     else if (configClass == Material.class) {
                         configValue = getMaterial(value, configEntry.value()).orElse(Material.SUNFLOWER);
                     }
-                    else if (configClass == Sound.class) {
-                        configValue = getSound(value, configEntry.value()).orElse(Sound.ITEM_ARMOR_EQUIP_GOLD);
+                    else if (configClass == SoundKey.class) {
+                        configValue = getSound(value, configEntry.value()).orElse(new SoundKey("minecraft:item.armor.equip_gold"));
                     }
                     else if (configClass == MessagePosition.class) {
                         Optional<MessagePosition> position = getMessagePosition(value, configEntry.value());
@@ -194,25 +203,23 @@ public final class Settings {
                         configValue = Util.color(value);
                     }
                 }
-                // todo can be improved in java 11
                 else if (configClass == Long.class || configClass == Integer.class || configClass == Float.class || configClass == Double.class) {
-                    Double value = Double.parseDouble(config.get(configKey, "0").toString());
+                    double value = Double.parseDouble(config.get(configKey, "0").toString());
 
                     if (configClass == Long.class) {
-                        configValue = value.longValue();
+                        configValue = (long) value;
                     }
                     else if (configClass == Integer.class) {
-                        configValue = value.intValue();
+                        configValue = (int) value;
                     }
                     else if (configClass == Float.class) {
-                        configValue = value.floatValue();
+                        configValue = (float) value;
                     }
                     else {
                         configValue = value;
                     }
                 }
                 else {
-                    //configValue = config.getObject(configKey, configClass);
                     configValue = configClass.cast(config.get(configKey));
                 }
 
@@ -227,8 +234,7 @@ public final class Settings {
                         defaultValue
                     ));
                 }
-                catch (IllegalAccessException ignored) {
-                }
+                catch (IllegalAccessException ignored) {}
             }
         }
 
@@ -297,16 +303,34 @@ public final class Settings {
         }
     }
 
-    // todo also parse with Registry.SOUNDS
-    //  this should also allow for custom sounds, not sure
-    private Optional<Sound> getSound(String name, String configKey) {
-        try {
-            return Optional.of(Sound.valueOf(name.toUpperCase().replace(" ", "_")));
+    private Optional<SoundKey> getSound(String name, String configKey) {
+        var key = NamespacedKey.fromString(name);
+        if (key != null) {
+            if (key.getNamespace().equalsIgnoreCase("minecraft")) {
+                // using minecraft namespace; check if it exists
+                Sound sound = Registry.SOUNDS.get(key);
+                if (sound != null) {
+                    return Optional.of(new SoundKey(sound));
+                }
+            }
+            else {
+                // using custom sound
+                return Optional.of(new SoundKey(key));
+            }
         }
-        catch (IllegalArgumentException exception) {
-            showWarning(("The sound '%s' in the config at `%s` does not exist. Please use a sound from: " +
-                "https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html").formatted(name, configKey));
 
+        try {
+            // outdated way of parsing sound
+            var sound = Sound.valueOf(name.toUpperCase().replace(" ", "_"));
+            showWarning(("Found an outdated sound key '%s' for `%s`. Change this to its namespace " +
+                "key '%s'. Support for outdated sound keys will be removed in a future release.").formatted(
+                name, configKey, sound.getKey().toString()
+            ));
+            return Optional.of(new SoundKey(sound));
+        }
+        catch (Throwable throwable) {
+            showWarning(("The sound '%s' in the config at `%s` does not exist. Please use a namespaced " +
+                "sound, as from /playsound. This can also be a custom sound.").formatted(name, configKey));
             return Optional.empty();
         }
     }

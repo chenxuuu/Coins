@@ -1,7 +1,6 @@
 package me.justeli.coins.config;
 
 import org.bukkit.Material;
-import org.bukkit.Sound;
 import org.bukkit.entity.EntityType;
 
 import java.text.DecimalFormat;
@@ -107,7 +106,7 @@ public class Config {
     public static MessagePosition DEATH_MESSAGE_POSITION = MessagePosition.SUBTITLE;
 
     @ConfigEntry("sound-name")
-    public static Sound SOUND_NAME = Sound.ITEM_ARMOR_EQUIP_GOLD;
+    public static SoundKey SOUND_NAME = new SoundKey("minecraft:item.armor.equip_gold");
 
     @ConfigEntry("currency-symbol")
     public static String CURRENCY_SYMBOL = "$";
