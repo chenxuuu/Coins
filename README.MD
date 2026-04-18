@@ -28,6 +28,16 @@ Coins is a plugin that allows players to collect coins for killing mobs and mini
 - Vault, and
 - an economy supportive plugin (like Essentials)​
 
+## Commands
+
+- **/withdraw <value> [amount]** - Withdraw money from your balance into physical coins.
+- **/coins drop <player|x,y,z[,world]> <amount> [radius] [worth]** - Drop coins around a player or location. An amount and radius can be specificied, and the value of each coin with 'worth'.
+- **/coins remove [radius|all]** - Remove coins in a radius or all of them in the world.
+- **/coins settings [page]** - List all the currently loaded settings from the config.
+- **/coins reload** - Reload the config to update all settings in-game.
+- **/coins version** - Check the version of the plugin and check if there's an update.
+- **/coins toggle** - Enable or disable coin drops and withdraw access.
+
 ## Permissions
 
 | Permission | Description |
