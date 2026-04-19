@@ -13,7 +13,6 @@ import me.justeli.coins.handler.listener.SpigotEventListener;
 import me.justeli.coins.handler.PickupHandler;
 import me.justeli.coins.handler.DropHandler;
 import me.justeli.coins.handler.listener.PaperEventListener;
-import me.justeli.coins.hook.mythicmobs.MMHook;
 import me.justeli.coins.hook.bstats.Metrics;
 import me.justeli.coins.config.Settings;
 import me.justeli.coins.hook.mythicmobs.MythicMobsHook;
@@ -44,11 +43,6 @@ import java.util.logging.Level;
  * @since December 13, 2016 (creation)
  */
 public final class Coins extends JavaPlugin {
-    // TODO
-    //  - fix:   does it still /ah dupe?
-    //  - fix:   https://github.com/mofucraft/Coins/commit/1338a6f22fcd5db5c58aab58421a75bb09ef3d5c
-    //  - fix:   custom model data for 1.20.4+
-
     private static final ExecutorService ASYNC_THREAD = Executors.newSingleThreadExecutor();
 
     private static final String UNSUPPORTED_VERSION =
@@ -94,7 +88,7 @@ public final class Coins extends JavaPlugin {
         if (getServer().getPluginManager().isPluginEnabled("MythicMobs")) {
             try {
                 if (getServer().getPluginManager().getPlugin("MythicMobs") != null) {
-                    this.mmHook = new MythicMobsHook(this);
+                    new MythicMobsHook(this);
                 }
             }
             catch (Exception | NoClassDefFoundError | InstantiationError exception) {
@@ -242,12 +236,5 @@ public final class Coins extends JavaPlugin {
     private UnfairMobHandler unfairMobHandler;
     public UnfairMobHandler getUnfairMobHandler() {
         return unfairMobHandler;
-    }
-
-    // hooks
-
-    private MMHook mmHook;
-    public Optional<MMHook> mmHook() {
-        return Optional.ofNullable(mmHook);
     }
 }

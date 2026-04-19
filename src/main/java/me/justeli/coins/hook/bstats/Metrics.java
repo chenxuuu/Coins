@@ -5,7 +5,6 @@ import me.justeli.coins.config.Config;
 import me.justeli.coins.config.Settings;
 import me.justeli.coins.util.VersionUtil;
 import org.bstats.charts.SimplePie;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.function.Consumer;
@@ -81,7 +80,6 @@ public final class Metrics {
             metrics.add("usingSkullTexture", Config.SKULL_TEXTURE != null && !Config.SKULL_TEXTURE.isEmpty());
             metrics.add("usingPaper", VersionUtil.isPlatformAtLeast(VersionUtil.Platform.PAPER));
             metrics.add("platform", VersionUtil.getPlatform().getName()); // todo add to bstats page
-            metrics.add("usingMythicMobs", coins.mmHook().isPresent());
             metrics.add("droppedCoinName", Config.DROPPED_COIN_NAME);
             metrics.add("withdrawnCoinNamesSingular", Config.WITHDRAWN_COIN_NAME_SINGULAR);
             metrics.add("withdrawnCoinNamesPlural", Config.WITHDRAWN_COIN_NAME_PLURAL);
@@ -93,9 +91,11 @@ public final class Metrics {
             metrics.add("usingLegacyKeysNew", Settings.USING_LEGACY_KEYS);
             metrics.add("economyHook", coins.getEconomy().name().orElse("None"));
 
-            Plugin mm = coins.getServer().getPluginManager().getPlugin("MythicMobs");
+            // mythicmobs
+            metrics.add("usingMythicMobs", coins.getServer().getPluginManager().isPluginEnabled("MythicMobs"));
+            var mm = coins.getServer().getPluginManager().getPlugin("MythicMobs");
             if (mm != null) {
-                metrics.add("mythicMobsVersion", mm.getDescription().getVersion());
+                metrics.add("mythicMobsVersion", mm.getDescription().getVersion().split("-")[0]);
             }
         });
     }

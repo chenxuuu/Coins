@@ -2,6 +2,7 @@ package me.justeli.coins.handler;
 
 import me.justeli.coins.Coins;
 import me.justeli.coins.config.Config;
+import me.justeli.coins.event.EntityCoinDropEvent;
 import me.justeli.coins.item.CoinMeta;
 import me.justeli.coins.util.BlockCache;
 import me.justeli.coins.util.BlockPosition;
@@ -73,16 +74,12 @@ public final class DropHandler implements Listener {
             return;
         }
 
-        if (coins.mmHook().isPresent() && Config.DISABLE_MYTHIC_MOB_HANDLING && coins.mmHook().get().isMythicMob(dead)) {
-            return;
-        }
-
         if (Config.LOSE_ON_DEATH && dead instanceof Player player && !Permissions.hasBypassLoseOnDeath(player)) {
             handleLosingOnDeath(player);
         }
 
         if (Config.DROP_WITH_ANY_DEATH) {
-            handleDropCheck(dead, null);
+            handleEntityCheck(dead, null);
             return;
         }
 
@@ -103,7 +100,7 @@ public final class DropHandler implements Listener {
             }
         }
 
-        handleDropCheck(dead, attacker.get());
+        handleEntityCheck(dead, attacker.get());
     }
 
     private void handleLosingOnDeath(@NotNull Player dead) {
@@ -131,7 +128,7 @@ public final class DropHandler implements Listener {
         });
     }
 
-    private void handleDropCheck(@NotNull Entity dead, @Nullable Player attacker) {
+    private void handleEntityCheck(@NotNull Entity dead, @Nullable Player attacker) {
         if (Config.PREVENT_SPLITS && coins.getUnfairMobHandler().isFromSplit(dead)) {
             if (attacker == null || !Permissions.hasDropSplitMobs(attacker)) {
                 return;
@@ -145,7 +142,7 @@ public final class DropHandler implements Listener {
         }
 
         if (Config.MOB_MULTIPLIER.containsKey(dead.getType()) && !(dead instanceof Player)) {
-            handleDrop(dead, attacker);
+            handleEntityCoinDrop(dead, attacker);
             return;
         }
 
@@ -170,10 +167,10 @@ public final class DropHandler implements Listener {
             return;
         }
 
-        handleDrop(dead, attacker);
+        handleEntityCoinDrop(dead, attacker);
     }
 
-    private void handleDrop(@NotNull Entity dead, @Nullable Player attacker) {
+    private void handleEntityCoinDrop(@NotNull Entity dead, @Nullable Player attacker) {
         if (Config.PREVENT_ALTS && attacker != null && dead instanceof Player victim) {
             var a1 = attacker.getAddress();
             var a2 = victim.getAddress();
@@ -190,6 +187,12 @@ public final class DropHandler implements Listener {
             if (attacker == null || !Permissions.hasBypassLocationLimit(attacker)) {
                 return;
             }
+        }
+
+        EntityCoinDropEvent registerEvent = new EntityCoinDropEvent(attacker, dead);
+        coins.getServer().getPluginManager().callEvent(registerEvent);
+        if (registerEvent.isCancelled()) {
+            return;
         }
 
         int multiplier = Config.MOB_MULTIPLIER.getOrDefault(dead.getType(), 1);

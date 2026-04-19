@@ -1,18 +1,21 @@
 package me.justeli.coins.hook.mythicmobs;
 
 import io.lumine.mythic.bukkit.BukkitAPIHelper;
-import io.lumine.mythic.bukkit.adapters.BukkitItemStack;
+import io.lumine.mythic.bukkit.adapters.item.ItemComponentBukkitItemStack;
 import io.lumine.mythic.bukkit.events.MythicDropLoadEvent;
 import io.lumine.mythic.core.drops.droppables.VanillaItemDrop;
 import me.justeli.coins.Coins;
-import org.bukkit.entity.Entity;
+import me.justeli.coins.config.Config;
+import me.justeli.coins.event.EntityCoinDropEvent;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 
 /**
- * works for MythicMobs 5.6 and up
+ * works for MythicMobs 5.7 and up
  * @author Eli
+ * @since April 02, 2022 (creation)
  */
-public final class MythicMobsHook implements MMHook {
+public final class MythicMobsHook implements Listener {
     private final Coins coins;
 
     // todo move mythic mobs hook to separate plugin
@@ -23,9 +26,11 @@ public final class MythicMobsHook implements MMHook {
 
     private static final BukkitAPIHelper BUKKIT_API_HELPER = new BukkitAPIHelper();
 
-    @Override
-    public boolean isMythicMob(Entity entity) {
-        return BUKKIT_API_HELPER.isMythicMob(entity);
+    @EventHandler
+    void onEntityCoinDropEvent(EntityCoinDropEvent event) {
+        if (Config.DISABLE_MYTHIC_MOB_HANDLING && BUKKIT_API_HELPER.isMythicMob(event.getDead())) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
@@ -37,7 +42,7 @@ public final class MythicMobsHook implements MMHook {
         VanillaItemDrop drop = new VanillaItemDrop(
             event.getConfig().getLine(),
             event.getConfig(),
-            new BukkitItemStack(coins.getCreateCoin().createDropped())
+            new ItemComponentBukkitItemStack(coins.getCreateCoin().createDropped())
         );
 
         event.register(drop);
