@@ -17,6 +17,9 @@ public final class PaperEventListener implements Listener {
         coins.parseEventHandlers(this);
     }
 
+    // on Spigot, Paper and Folia, PlayerAttemptPickupItemEvent always completes before
+    //  EntityPickupItemEvent is triggered. so these events are never triggered at the
+    //  same time; it is sync after each other. this has also been tested
     @EventHandler
     void onPlayerAttemptPickupItemEvent(PlayerAttemptPickupItemEvent event) {
         PickupEvent registerEvent = new PickupEvent(event.getPlayer(), event.getItem());

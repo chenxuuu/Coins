@@ -304,33 +304,41 @@ public final class Settings {
     }
 
     private Optional<SoundKey> getSound(String name, String configKey) {
-        var key = NamespacedKey.fromString(name);
-        if (key != null) {
-            if (key.getNamespace().equalsIgnoreCase("minecraft")) {
-                // using minecraft namespace; check if it exists
-                Sound sound = Registry.SOUNDS.get(key);
-                if (sound != null) {
-                    return Optional.of(new SoundKey(sound));
-                }
-            }
-            else {
-                // using custom sound
-                return Optional.of(new SoundKey(key));
-            }
+        // outdated way of parsing sound
+        var sound = fromEnumSound(name);
+        if (sound.isPresent()) {
+            showWarning(("Found an outdated sound key '%s' in the config at `%s`. Change this to its namespaced " +
+                "key '%s'. Support for outdated sound keys will be removed in a future release.").formatted(
+                name, configKey, sound.get().getKey().toString()
+            ));
+            return Optional.of(new SoundKey(sound.get()));
         }
 
+        var key = NamespacedKey.fromString(name);
+        if (key != null) {
+            return Optional.of(new SoundKey(key));
+        }
+
+        showWarning(("The sound '%s' in the config at `%s` is not a valid namespaced sound key. Please use a namespaced " +
+            "sound, as from /playsound. This can also be a custom sound.").formatted(name, configKey));
+        return Optional.empty();
+    }
+
+    // parse Sound from enum, will be removed in the future
+    private static Optional<Sound> fromEnumSound(String name) {
         try {
-            // outdated way of parsing sound
             var sound = Sound.valueOf(name.toUpperCase().replace(" ", "_"));
-            showWarning(("Found an outdated sound key '%s' for `%s`. Change this to its namespace " +
-                "key '%s'. Support for outdated sound keys will be removed in a future release.").formatted(
-                name, configKey, sound.getKey().toString()
-            ));
-            return Optional.of(new SoundKey(sound));
+            var key = NamespacedKey.fromString(name);
+            if (key == null) {
+                return Optional.of(sound); // invalid key, so must be from enum
+            }
+
+            if (Registry.SOUNDS.get(key) != null) {
+                return Optional.empty(); // valid key in the registry, so not from enum
+            }
+            return Optional.of(sound);
         }
         catch (Throwable throwable) {
-            showWarning(("The sound '%s' in the config at `%s` does not exist. Please use a namespaced " +
-                "sound, as from /playsound. This can also be a custom sound.").formatted(name, configKey));
             return Optional.empty();
         }
     }
