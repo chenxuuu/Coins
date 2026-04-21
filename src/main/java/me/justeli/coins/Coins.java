@@ -1,8 +1,11 @@
 package me.justeli.coins;
 
-import me.justeli.coins.command.CoinsCommand;
-import me.justeli.coins.command.DisabledCommand;
-import me.justeli.coins.command.WithdrawCommand;
+import me.justeli.coins.command.CoinsCommandSpigot;
+import me.justeli.coins.command.DisabledCommandPaper;
+import me.justeli.coins.command.DisabledCommandSpigot;
+import me.justeli.coins.command.CoinsCommandPaper;
+import me.justeli.coins.command.WithdrawCommandPaper;
+import me.justeli.coins.command.WithdrawCommandSpigot;
 import me.justeli.coins.config.Config;
 import me.justeli.coins.handler.HopperHandler;
 import me.justeli.coins.handler.InventoryHandler;
@@ -126,11 +129,22 @@ public final class Coins extends JavaPlugin {
             new ModificationHandler(this);
 
             // register commands
-            new CoinsCommand(this);
-            new WithdrawCommand(this);
+            if (VersionUtil.isPlatformAtLeast(VersionUtil.Platform.PAPER)) {
+                new CoinsCommandPaper(this);
+                new WithdrawCommandPaper(this);
+            }
+            else {
+                new CoinsCommandSpigot(this);
+                new WithdrawCommandSpigot(this);
+            }
         }
         else {
-            new DisabledCommand(this);
+            if (VersionUtil.isPlatformAtLeast(VersionUtil.Platform.PAPER)) {
+                new DisabledCommandPaper(this);
+            }
+            else {
+                new DisabledCommandSpigot(this);
+            }
             line(Level.SEVERE);
             console(Level.SEVERE, "Plugin 'Coins' is now disabled, until the issues are fixed.");
             line(Level.SEVERE);

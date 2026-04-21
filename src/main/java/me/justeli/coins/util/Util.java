@@ -41,7 +41,7 @@ import java.util.regex.Pattern;
  * @since January 6, 2020 (creation)
  */
 public final class Util {
-    private static final Pattern HEX_PATTERN = Pattern.compile("(?<!\\\\)(&#[a-fA-F\\d]{6})");
+    private static final Pattern HEX_PATTERN = Pattern.compile("(?<!\\\\)(&#[a-fA-F0-9]{6})");
     private static final SplittableRandom RANDOM = new SplittableRandom();
 
     public static void sendNoPermission(CommandSender sender) {
@@ -49,12 +49,13 @@ public final class Util {
     }
 
     // todo new way of color parsing
+    //  https://docs.papermc.io/adventure/minimessage/format/
     public static String color(@NotNull String message) {
         return ChatColor.translateAlternateColorCodes('&', parseRgb(message));
     }
 
     public static String formatAmountAndCurrency(String text, double amount) {
-        String displayAmount = doubleToString(amount);
+        String displayAmount = toFormattedMoneyDecimals(amount);
         return formatCurrency(text.replaceAll("(%amount%|\\{amount})", Matcher.quoteReplacement(displayAmount)));
     }
 
@@ -144,12 +145,12 @@ public final class Util {
         return RANDOM.nextDouble() * first + second;
     }
 
-    public static double round(double value) {
+    public static double toRoundedMoneyDecimals(double value) {
         return BigDecimal.valueOf(value).setScale(Config.MONEY_DECIMALS, RoundingMode.HALF_UP).doubleValue();
     }
 
-    public static String doubleToString(double input) {
-        return Config.DECIMAL_FORMATTER.format(round(input));
+    public static String toFormattedMoneyDecimals(double input) {
+        return Config.DECIMAL_FORMATTER.format(toRoundedMoneyDecimals(input));
     }
 
     public static Optional<Integer> parseInt(String arg) {
@@ -163,7 +164,7 @@ public final class Util {
 
     public static Optional<Double> parseDouble(String arg) {
         try {
-            return Optional.of(Util.round(Double.parseDouble(arg)));
+            return Optional.of(toRoundedMoneyDecimals(Double.parseDouble(arg)));
         }
         catch (NumberFormatException exception) {
             return Optional.empty();

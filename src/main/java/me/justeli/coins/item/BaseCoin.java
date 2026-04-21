@@ -45,7 +45,7 @@ public final class BaseCoin {
             }
 
             if (Config.ENCHANTED_COIN) {
-                baseCoinMeta.addEnchant(Enchantment.DURABILITY, 1, true);
+                baseCoinMeta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 baseCoinMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
 

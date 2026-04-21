@@ -12,6 +12,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.enchantments.Enchantment;
@@ -63,6 +64,22 @@ public final class DropHandler implements Listener {
 
     private final Map<BlockPosition, BlockCache> locationLimitCache = new ConcurrentHashMap<>();
 
+    // changed from minecraft:generic.max_health to minecraft:max_health in Minecraft 1.21.4
+    private static Attribute MAX_HEALTH_ATTRIBUTE;
+    static {
+        var key = NamespacedKey.fromString("minecraft:max_health");
+        if (key != null) {
+            MAX_HEALTH_ATTRIBUTE = Registry.ATTRIBUTE.get(key);
+        }
+
+        if (MAX_HEALTH_ATTRIBUTE == null) {
+            key = NamespacedKey.fromString("minecraft:generic.max_health");
+            if (key != null) {
+                MAX_HEALTH_ATTRIBUTE = Registry.ATTRIBUTE.get(key);
+            }
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGH)
     void onEntityDeathEvent(EntityDeathEvent event) {
         if (coins.isDisabled()) {
@@ -83,7 +100,7 @@ public final class DropHandler implements Listener {
             return;
         }
 
-        AttributeInstance maxHealth = dead.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        AttributeInstance maxHealth = dead.getAttribute(MAX_HEALTH_ATTRIBUTE);
         if (maxHealth == null) {
             return;
         }
@@ -110,7 +127,7 @@ public final class DropHandler implements Listener {
                 return;
             }
 
-            double take = Util.round(Config.TAKE_PERCENTAGE? (random / 100) * balance : random);
+            double take = Util.toRoundedMoneyDecimals(Config.TAKE_PERCENTAGE? (random / 100) * balance : random);
             if (take <= 0) {
                 return;
             }
@@ -259,7 +276,7 @@ public final class DropHandler implements Listener {
 
         double increment = 1;
         if (player != null && Config.ENCHANT_INCREMENT > 0) {
-            Enchantment enchant = block? Enchantment.LOOT_BONUS_BLOCKS : Enchantment.LOOT_BONUS_MOBS;
+            Enchantment enchant = block? Enchantment.FORTUNE : Enchantment.LOOTING;
 
             int lootingLevel = player.getInventory().getItemInMainHand().getEnchantmentLevel(enchant);
             if (lootingLevel > 0) {

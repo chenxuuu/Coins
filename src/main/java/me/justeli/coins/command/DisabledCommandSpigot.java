@@ -1,8 +1,6 @@
 package me.justeli.coins.command;
 
 import me.justeli.coins.Coins;
-import me.justeli.coins.config.Message;
-import me.justeli.coins.util.Util;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -10,12 +8,11 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * @author Eli
- * @since August 2, 2021 (creation)
+ * @since April 21, 2026 (creation)
  */
-public final class DisabledCommand implements CommandExecutor {
-    private final Coins coins;
-    public DisabledCommand(Coins coins) {
-        this.coins = coins;
+public final class DisabledCommandSpigot extends DisabledCommandLogic implements CommandExecutor {
+    public DisabledCommandSpigot(Coins coins) {
+        super(coins);
 
         var coinsCommand = coins.getCommand("coins");
         var withdrawCommand = coins.getCommand("withdraw");
@@ -29,10 +26,7 @@ public final class DisabledCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, @NotNull String[] args) {
-        sender.sendMessage(Message.DISABLED_REASONS.toString());
-        for (String message : coins.getDisabledReasons()) {
-            sender.sendMessage(Util.color("- &c" + message));
-        }
+        executeCommand(sender);
         return true;
     }
 }

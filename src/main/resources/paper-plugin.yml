@@ -5,23 +5,15 @@ website: '${project.url}'
 description: '${project.description}'
 api-version: '${versions.minecraft}'
 authors: [JustEli]
-softdepend: [Vault, MythicMobs]
-libraries:
-  - 'net.kyori:adventure-platform-bukkit:${versions.adventure-platform-bukkit}'
-  - 'net.kyori:adventure-text-minimessage:${versions.adventure}'
-  - 'net.kyori:adventure-text-serializer-legacy:${versions.adventure}'
-  - 'net.kyori:adventure-text-serializer-plain:${versions.adventure}'
-commands:
-  coins:
-    description: 'Command for showing all available commands from Coins. Also used for various admin tools.'
-    permission: 'coins.command'
-    usage: '/<command> [reload|settings|drop|remove|language|version|toggle]'
-    aliases:
-      - coin
-  withdraw:
-    description: 'Withdraw money from your balance into physical coins.'
-    permission: 'coins.withdraw'
-    usage: '/<command> <worth> [amount]'
+folia-supported: true
+dependencies:
+  server:
+    'Vault':
+      load: BEFORE
+      required: false
+    'MythicMobs':
+      load: BEFORE
+      required: false
 permissions:
   'coins.command':
     default: true

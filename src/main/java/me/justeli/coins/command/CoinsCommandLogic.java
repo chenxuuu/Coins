@@ -5,15 +5,11 @@ import me.justeli.coins.config.Config;
 import me.justeli.coins.config.Message;
 import me.justeli.coins.item.CoinMeta;
 import me.justeli.coins.util.Permissions;
-import me.justeli.coins.util.Util;
 import me.justeli.coins.util.PluginVersion;
-import net.md_5.bungee.api.ChatColor;
+import me.justeli.coins.util.Util;
 import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -33,27 +29,18 @@ import java.util.TreeSet;
  * @author Eli
  * @since December 26, 2018 (creation)
  */
-public final class CoinsCommand implements CommandExecutor, TabCompleter {
+public abstract class CoinsCommandLogic {
     private final Coins coins;
-    public CoinsCommand(Coins coins) {
+    public CoinsCommandLogic(Coins coins) {
         this.coins = coins;
-
-        var command = coins.getCommand("coins");
-        if (command == null) {
-            return;
-        }
-
-        command.setExecutor(this);
-        command.setTabCompleter(this);
     }
 
     private static final SplittableRandom RANDOM = new SplittableRandom();
 
-    @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, @NotNull String[] args) {
+    public void executeCommand(@NotNull CommandSender sender, @NotNull String[] args) {
         if (args.length == 0) {
             handleSendHelp(sender);
-            return true;
+            return;
         }
 
         switch (args[0].toLowerCase()) {
@@ -138,8 +125,6 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
             }
             default -> handleSendHelp(sender);
         }
-
-        return true;
     }
 
     private boolean checkPermission(CommandSender sender, boolean permission) {
@@ -151,11 +136,10 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
         return false;
     }
 
-    @Override
-    public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, @NotNull String[] args) {
+    public List<String> getTabCompletions(@NotNull CommandSender sender, @NotNull String[] args) {
         List<String> list = new ArrayList<>();
-        if (args.length == 1) {
-            String remaining = args[0].toLowerCase();
+        if (args.length <= 1) {
+            String remaining = args.length == 1? args[0].toLowerCase() : "";
             if (Permissions.hasCommandDrop(sender) && "drop".startsWith(remaining)) {
                 list.add("drop");
             }
@@ -291,7 +275,7 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
                     }
 
                     location = new Location(world, x.get(), y.get(), z.get());
-                    name = Util.doubleToString(x.get()) + ", " + Util.doubleToString(y.get()) + ", " + Util.doubleToString(z.get());
+                    name = Util.toFormattedMoneyDecimals(x.get()) + ", " + Util.toFormattedMoneyDecimals(y.get()) + ", " + Util.toFormattedMoneyDecimals(z.get());
                 }
                 else {
                     sender.sendMessage(Message.COORDS_NOT_FOUND.toString());
@@ -396,7 +380,7 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
             notice = " " + Message.OUTDATED.replace("/coins update");
         }
 
-        sender.sendMessage(String.format(COINS_TITLE, currentVersion) + ChatColor.DARK_RED + notice);
+        sender.sendMessage(String.format(COINS_TITLE, currentVersion) + Util.color("&4" + notice));
 
         if (Permissions.hasCommandDrop(sender)) {
             sender.sendMessage(Message.DROP_USAGE.toString());
@@ -428,8 +412,8 @@ public final class CoinsCommand implements CommandExecutor, TabCompleter {
         }
 
         if (lines == 0) {
-            sender.sendMessage(ChatColor.GOLD + coins.getDescription().getDescription());
-            sender.sendMessage(ChatColor.YELLOW + "More info: " + ChatColor.BLUE + coins.getDescription().getWebsite());
+            sender.sendMessage(Util.color("&6" + coins.getDescription().getDescription()));
+            sender.sendMessage(Util.color("&eMore info: &9" + coins.getDescription().getWebsite()));
         }
     }
 

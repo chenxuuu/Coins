@@ -107,7 +107,7 @@ public final class PickupHandler implements Listener {
     }
 
     public void depositMoney(Player player, double amount) {
-        double rounded = Util.round(amount);
+        double rounded = Util.toRoundedMoneyDecimals(amount);
         coins.getEconomy().deposit(player.getUniqueId(), rounded, () -> {
             UUID uuid = player.getUniqueId();
             long previousTime = pickupTimeCache.computeIfAbsent(uuid, empty -> 0L);
