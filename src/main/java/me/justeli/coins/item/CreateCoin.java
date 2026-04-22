@@ -4,6 +4,7 @@ import me.justeli.coins.Coins;
 import me.justeli.coins.config.Config;
 import me.justeli.coins.util.Util;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.SplittableRandom;
 
@@ -19,6 +20,7 @@ public final class CreateCoin {
 
     private static final SplittableRandom RANDOM = new SplittableRandom();
 
+    @ApiStatus.AvailableSince("1.14.1")
     public ItemStack createWithdrawn(double worth) {
         var plural = worth == 1? Config.WITHDRAWN_COIN_NAME_SINGULAR : Config.WITHDRAWN_COIN_NAME_PLURAL;
         String name = Util.formatAmountAndCurrency(plural, worth);
@@ -36,10 +38,17 @@ public final class CreateCoin {
         return coin;
     }
 
+    @ApiStatus.AvailableSince("1.14.1")
     public ItemStack createDropped() {
         return createDropBuilder().build();
     }
 
+    @Deprecated(forRemoval = true)
+    public ItemStack dropped() {
+        return createDropped();
+    }
+
+    @ApiStatus.AvailableSince("1.14.1")
     public ItemStack createDropped(double increment) {
         if (increment == 1) {
             return createDropped();
@@ -51,6 +60,7 @@ public final class CreateCoin {
         return coin.build();
     }
 
+    @ApiStatus.AvailableSince("1.14.1")
     public MetaBuilder createOther() {
         return coins.getBaseCoin().cloneBaseOther();
     }
