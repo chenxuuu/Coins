@@ -36,7 +36,7 @@ public final class CoinsCommandPaper extends CoinsCommandLogic implements BasicC
         executeCommand(source.getSender(), args);
     }
 
-    @Override
+    @Override // todo fix "/coins drop " suggesting "drop" only and not next argument
     public Collection<String> suggest(CommandSourceStack commandSourceStack, String[] args) {
         return getTabCompletions(commandSourceStack.getSender(), args);
     }

@@ -25,15 +25,13 @@ public final class BaseCoin {
     private MetaBuilder otherCoin;
 
     public void reload() {
-        String texture = Config.SKULL_TEXTURE;
-
         ItemStack baseCoin;
-        if (texture == null || texture.isEmpty()) {
+        if (Config.SKULL_TEXTURE == null || Config.SKULL_TEXTURE.isEmpty()) {
             baseCoin = new ItemStack(Config.COIN_ITEM);
         }
         else {
             baseCoin = Objects.requireNonNullElseGet(
-                SkullUtil.fromTexture(texture),
+                SkullUtil.fromTexture(Config.SKULL_TEXTURE),
                 () -> new ItemStack(Config.COIN_ITEM)
             );
         }

@@ -3,8 +3,10 @@ package me.justeli.coins.handler;
 import me.justeli.coins.Coins;
 import me.justeli.coins.event.PickupEvent;
 import me.justeli.coins.config.Config;
+import me.justeli.coins.util.ComponentUtil;
 import me.justeli.coins.util.Permissions;
 import me.justeli.coins.util.Util;
+import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -122,8 +124,11 @@ public final class PickupHandler implements Listener {
             }
 
             double displayAmount = pickupAmountCache.computeIfAbsent(uuid, empty -> 0D);
-            if (!Config.PICKUP_MESSAGE.isEmpty()) {
-                Util.sendMessage(player, Config.PICKUP_MESSAGE, Config.PICKUP_MESSAGE_POSITION, displayAmount);
+            if (!Config.PICKUP_MESSAGE.equals(Component.empty())) {
+                coins.getMessenger().sendMessage(
+                    player, Config.PICKUP_MESSAGE_POSITION,
+                    ComponentUtil.replaceAmount(Config.PICKUP_MESSAGE, displayAmount)
+                );
             }
 
             pickupTimeCache.put(uuid, System.currentTimeMillis());

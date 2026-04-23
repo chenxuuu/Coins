@@ -4,9 +4,13 @@ import me.justeli.coins.Coins;
 import me.justeli.coins.config.Config;
 import me.justeli.coins.config.Message;
 import me.justeli.coins.item.CoinMeta;
+import me.justeli.coins.util.ColorResolver;
 import me.justeli.coins.util.Permissions;
-import me.justeli.coins.util.PluginVersion;
+import me.justeli.coins.util.VersionPlugin;
 import me.justeli.coins.util.Util;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
@@ -23,7 +27,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.SplittableRandom;
-import java.util.TreeSet;
 
 /**
  * @author Eli
@@ -46,12 +49,12 @@ public abstract class CoinsCommandLogic {
         switch (args[0].toLowerCase()) {
             case "reload" -> {
                 if (checkPermission(sender, Permissions.hasCommandReload(sender))) {
-                    long ms = System.currentTimeMillis();
+                    long millis = System.currentTimeMillis();
 
                     coins.getSettings().reload();
                     coins.getBaseCoin().reload();
 
-                    sender.sendMessage(Message.RELOAD_SUCCESS.replace(Long.toString(System.currentTimeMillis() - ms)));
+                    sender.sendMessage(Message.RELOAD_SUCCESS.replace(Long.toString(System.currentTimeMillis() - millis)));
                     if (coins.getSettings().getWarningCount() != 0) {
                         sender.sendMessage(Message.MINOR_ISSUES.toString());
                     }
@@ -63,13 +66,8 @@ public abstract class CoinsCommandLogic {
             case "settings" -> {
                 if (checkPermission(sender, Permissions.hasCommandSettings(sender))) {
                     int page = args.length > 1? Util.parseInt(args[1]).orElse(1) : 1;
-                    TreeSet<String> keys = coins.getSettings().getKeys();
-                    int totalPages = keys.size() / 8 + Math.min(keys.size() % 8, 1);
-
-                    sender.sendMessage(String.format(COINS_TITLE, "Settings") + Util.color(" &7" + page + "&8/&7" + totalPages));
-                    for (String setting : Util.page(new ArrayList<>(keys), 8, page)) {
-                        sender.sendMessage(Util.color(setting));
-                    }
+                    List<Component> keys = coins.getSettings().getKeys();
+                    coins.getMessenger().sendPage(sender, keys, page, "Settings", "/coins settings");
                 }
             }
             case "drop" -> {
@@ -91,24 +89,24 @@ public abstract class CoinsCommandLogic {
             }
             case "version", "update" -> {
                 if (checkPermission(sender, Permissions.hasCommandVersion(sender))) {
-                    sender.sendMessage(String.format(COINS_TITLE, "Version"));
+                    coins.getMessenger().sendHeader(sender, "Version");// todo language
 
-                    Optional<PluginVersion> latestVersion = coins.getLatestVersion();
-                    String currentVersion = coins.getDescription().getVersion();
+                    Optional<VersionPlugin> latestVersion = coins.getVersionCheck().getLatestVersion();
+                    String currentVersion = coins.getVersionCheck().getPluginVersion();
 
                     sender.sendMessage(Message.CURRENTLY_INSTALLED.replace(currentVersion));
 
                     if (latestVersion.isEmpty()) {
                         sender.sendMessage(Message.LATEST_RETRIEVE_FAIL.toString());
                     }
-                    else if (latestVersion.get().tag().equals(currentVersion)) {
+                    else if (latestVersion.get().getTag().equals(currentVersion)) {
                         sender.sendMessage(Message.UP_TO_DATE.replace(currentVersion));
                     }
                     else {
                         sender.sendMessage(Message.LATEST_RELEASE.replace(
-                            latestVersion.get().tag(),
-                            Util.DATE_FORMAT.format(new Date(latestVersion.get().time())),
-                            latestVersion.get().name(),
+                            latestVersion.get().getTag(),
+                            Util.formatDate(latestVersion.get().getTime()),
+                            latestVersion.get().getName(),
                             coins.getDescription().getWebsite()
                         ));
                     }
@@ -364,11 +362,9 @@ public abstract class CoinsCommandLogic {
         sender.sendMessage(Message.REMOVED_COINS.replace(Long.toString(amount)));
     }
 
-    private static final String COINS_TITLE = Util.color("&8&m     &6 Coins &e%s &8&m     &r");
-
     private void handleSendHelp(CommandSender sender) {
-        String currentVersion = coins.getDescription().getVersion();
-        Optional<PluginVersion> latestVersion = coins.getLatestVersion();
+        String currentVersion = coins.getVersionCheck().getPluginVersion();
+        Optional<VersionPlugin> latestVersion = coins.getVersionCheck().getLatestVersion();
 
         int lines = 0;
 
@@ -376,11 +372,11 @@ public abstract class CoinsCommandLogic {
         if (coins.isDisabled()) {
             notice = " " + Message.GLOBALLY_DISABLED;
         }
-        else if (latestVersion.isPresent() && !latestVersion.get().tag().equals(currentVersion) && Permissions.hasCommandVersion(sender)) {
+        else if (latestVersion.isPresent() && !latestVersion.get().getTag().equals(currentVersion) && Permissions.hasCommandVersion(sender)) {
             notice = " " + Message.OUTDATED.replace("/coins update");
         }
 
-        sender.sendMessage(String.format(COINS_TITLE, currentVersion) + Util.color("&4" + notice));
+        coins.getMessenger().sendHeader(sender, notice);
 
         if (Permissions.hasCommandDrop(sender)) {
             sender.sendMessage(Message.DROP_USAGE.toString());
@@ -412,8 +408,11 @@ public abstract class CoinsCommandLogic {
         }
 
         if (lines == 0) {
-            sender.sendMessage(Util.color("&6" + coins.getDescription().getDescription()));
-            sender.sendMessage(Util.color("&eMore info: &9" + coins.getDescription().getWebsite()));
+            coins.getMessenger().sendMessage(sender, Component.text(coins.getDescription().getDescription(), ColorResolver.PRIMARY));
+            coins.getMessenger().sendMessage(sender,
+                Component.text(coins.getDescription().getWebsite(), NamedTextColor.BLUE)
+                    .clickEvent(ClickEvent.openUrl(coins.getDescription().getWebsite()))
+            );
         }
     }
 

@@ -36,7 +36,7 @@ public final class CoinMeta {
             return false;
         }
 
-        return coins.meta(item).setData(COINS_TYPE, PersistentDataType.INTEGER).isPresent();
+        return coins.meta(item).getData(COINS_TYPE, PersistentDataType.INTEGER).isPresent();
     }
 
     public boolean isDroppedCoin(ItemStack item) {
@@ -44,7 +44,7 @@ public final class CoinMeta {
             return false;
         }
 
-        return coins.meta(item).setData(COINS_TYPE, PersistentDataType.INTEGER).orElse(0) == TYPE_DROPPED;
+        return coins.meta(item).getData(COINS_TYPE, PersistentDataType.INTEGER).orElse(0) == TYPE_DROPPED;
     }
 
     public boolean isWithdrawnCoin(ItemStack item) {
@@ -52,7 +52,7 @@ public final class CoinMeta {
             return false;
         }
 
-        return coins.meta(item).setData(COINS_TYPE, PersistentDataType.INTEGER).orElse(0) == TYPE_WITHDRAWN;
+        return coins.meta(item).getData(COINS_TYPE, PersistentDataType.INTEGER).orElse(0) == TYPE_WITHDRAWN;
     }
 
     public double getValue(ItemStack item) {
@@ -60,12 +60,11 @@ public final class CoinMeta {
             return 0;
         }
 
-        Optional<Double> worth = coins.meta(item).setData(COINS_WORTH, PersistentDataType.DOUBLE);
+        Optional<Double> worth = coins.meta(item).getData(COINS_WORTH, PersistentDataType.DOUBLE);
         return worth.map(value -> value * item.getAmount()).orElse(0D);
-
     }
 
     public double getIncrement(ItemStack item) {
-        return coins.meta(item).setData(COINS_INCREMENT, PersistentDataType.DOUBLE).orElse(1D);
+        return coins.meta(item).getData(COINS_INCREMENT, PersistentDataType.DOUBLE).orElse(1D);
     }
 }

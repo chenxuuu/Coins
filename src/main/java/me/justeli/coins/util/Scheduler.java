@@ -11,9 +11,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Eli
  * @since April 16, 2026
  */
-public final class ScheduleUtil {
+public final class Scheduler {
     private final Coins coins;
-    public ScheduleUtil(Coins coins) {
+    public Scheduler(Coins coins) {
         this.coins = coins;
     }
 

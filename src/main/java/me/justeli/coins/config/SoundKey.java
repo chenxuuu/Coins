@@ -18,7 +18,8 @@ public final class SoundKey {
         this(key.toString());
     }
 
-    public SoundKey(Sound sound) {
+    // Sound#getKey will be removed from Paper in the future
+    public SoundKey(Sound sound) throws NoClassDefFoundError, NoSuchMethodError {
         this(sound.getKey());
     }
 

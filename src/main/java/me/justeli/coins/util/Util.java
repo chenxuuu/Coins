@@ -1,14 +1,9 @@
 package me.justeli.coins.util;
 
 import me.justeli.coins.config.Config;
-import me.justeli.coins.config.Message;
-import me.justeli.coins.config.MessagePosition;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
+import me.justeli.coins.config.Settings;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Boss;
 import org.bukkit.entity.Entity;
@@ -24,58 +19,38 @@ import org.bukkit.entity.Wolf;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.projectiles.ProjectileSource;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
+import java.util.Date;
 import java.util.Optional;
 import java.util.SplittableRandom;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Eli
  * @since January 6, 2020 (creation)
  */
 public final class Util {
-    private static final Pattern HEX_PATTERN = Pattern.compile("(?<!\\\\)(&#[a-fA-F0-9]{6})");
     private static final SplittableRandom RANDOM = new SplittableRandom();
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MMMM d, yyyy");
 
-    public static void sendNoPermission(CommandSender sender) {
-        sender.sendMessage(Message.NO_PERMISSION.toString());
-    }
-
-    // todo new way of color parsing
-    //  https://docs.papermc.io/adventure/minimessage/format/
-    public static String color(@NotNull String message) {
-        return ChatColor.translateAlternateColorCodes('&', parseRgb(message));
+    public static String formatDate(long millis) {
+        return DATE_FORMAT.format(new Date(millis));
     }
 
     public static String formatAmountAndCurrency(String text, double amount) {
         String displayAmount = toFormattedMoneyDecimals(amount);
-        return formatCurrency(text.replaceAll("(%amount%|\\{amount})", Matcher.quoteReplacement(displayAmount)));
+        return formatCurrency(text.replace("{amount}", displayAmount));
     }
 
     public static String formatCurrency(String text) {
-        // {currency} or {$}
-        return text.replaceAll("(\\{currency}|\\{\\$})", Matcher.quoteReplacement(Config.CURRENCY_SYMBOL));
+        return text.replace("{currency}", Config.CURRENCY_SYMBOL);
     }
 
-    // todo new way of color parsing
-    private static String parseRgb(@NotNull String message) {
-        Matcher matcher = HEX_PATTERN.matcher(message);
-        while (matcher.find()) {
-            String color = message.substring(matcher.start(), matcher.end());
-            String hex = color.replace("&", "").toUpperCase();
-
-            message = message.replace(color, ChatColor.of(hex).toString());
-            matcher = HEX_PATTERN.matcher(message);
-        }
-
-        return message;
+    public static String toCapitalized(String message) {
+        return (message == null || message.isEmpty())? "" : message.substring(0, 1).toUpperCase() + message.substring(1).toLowerCase();
     }
 
     public static boolean isHostile(Entity entity) {
@@ -111,6 +86,7 @@ public final class Util {
         return Optional.empty();
     }
 
+    // todo move to handler/action class together with dropCoins and depositMoney
     public static void playCoinPickupSound(Player player) {
         float volume = Config.SOUND_VOLUME;
         float pitch = Config.SOUND_PITCH;
@@ -150,7 +126,7 @@ public final class Util {
     }
 
     public static String toFormattedMoneyDecimals(double input) {
-        return Config.DECIMAL_FORMATTER.format(toRoundedMoneyDecimals(input));
+        return Settings.DECIMAL_FORMATTER.format(toRoundedMoneyDecimals(input));
     }
 
     public static Optional<Integer> parseInt(String arg) {
@@ -169,26 +145,6 @@ public final class Util {
         catch (NumberFormatException exception) {
             return Optional.empty();
         }
-    }
-
-    public static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MMMM d, yyyy");
-
-    /// page starts at 1
-    public static ArrayList<String> page(ArrayList<String> items, int pageSize, int pageNumber) {
-        if (pageNumber <= 0) {
-            return new ArrayList<>();
-        }
-
-        ArrayList<String> pages = new ArrayList<>();
-        for (int i = (pageNumber - 1) * pageSize; i < pageNumber * pageSize; i++) {
-            if (items.size() <= i) {
-                continue;
-            }
-
-            pages.add(items.get(i));
-        }
-
-        return pages;
     }
 
     public static Optional<Player> getRootDamage(LivingEntity dead) {
@@ -220,21 +176,5 @@ public final class Util {
         }
 
         return Optional.empty();
-    }
-
-    public static void sendMessage(Player player, String message, MessagePosition position, double amount) {
-        switch (position) {
-            case ACTIONBAR -> player.spigot().sendMessage(
-                ChatMessageType.ACTION_BAR,
-                TextComponent.fromLegacyText(Util.color(Util.formatAmountAndCurrency(message, amount)))
-            );
-            case TITLE -> player.sendTitle(
-                Util.color(Util.formatAmountAndCurrency(message, amount)), ChatColor.RESET.toString(), 10, 60, 10
-            );
-            case SUBTITLE -> player.sendTitle(
-                ChatColor.RESET.toString(), Util.color(Util.formatAmountAndCurrency(message, amount)), 10, 60, 10
-            );
-            case CHAT -> player.sendMessage(Util.color(Util.formatAmountAndCurrency(message, amount)));
-        }
     }
 }

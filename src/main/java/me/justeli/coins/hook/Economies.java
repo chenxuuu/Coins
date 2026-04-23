@@ -33,7 +33,7 @@ public final class Economies implements EconomyHook {
         );
 
         if (economy == null && missingPlugins.isEmpty()) {
-            missingPlugins.add(String.join(" or ", supportedHooks));
+            missingPlugins.add("'" + String.join("' or '", supportedHooks) + "'");
         }
     }
 

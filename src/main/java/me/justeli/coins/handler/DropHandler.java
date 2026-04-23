@@ -6,6 +6,7 @@ import me.justeli.coins.event.EntityCoinDropEvent;
 import me.justeli.coins.item.CoinMeta;
 import me.justeli.coins.util.BlockCache;
 import me.justeli.coins.util.BlockPosition;
+import me.justeli.coins.util.ComponentUtil;
 import me.justeli.coins.util.Permissions;
 import me.justeli.coins.util.Util;
 import org.bukkit.GameMode;
@@ -133,7 +134,11 @@ public final class DropHandler implements Listener {
             }
 
             coins.getEconomy().withdraw(dead.getUniqueId(), take, () -> {
-                Util.sendMessage(dead, Config.DEATH_MESSAGE, Config.DEATH_MESSAGE_POSITION, take);
+                coins.getMessenger().sendMessage(
+                    dead, Config.DEATH_MESSAGE_POSITION,
+                    ComponentUtil.replaceAmount(Config.DEATH_MESSAGE, take)
+                );
+
                 if (Config.DROP_ON_DEATH && dead.getLocation().getWorld() != null) {
                     // works on Folia
                     dead.getWorld().dropItem(

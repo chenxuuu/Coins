@@ -3,8 +3,14 @@ package me.justeli.coins.config;
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Converter;
 import me.justeli.coins.Coins;
+import me.justeli.coins.util.ColorResolver;
+import me.justeli.coins.util.ComponentUtil;
 import me.justeli.coins.util.Permissions;
 import me.justeli.coins.util.Util;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.md_5.bungee.api.ChatColor;
+import org.bukkit.Keyed;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -17,6 +23,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,7 +42,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -53,6 +60,8 @@ public final class Settings {
         this.fallbackLanguage = retrieveFallbackLanguage();
         reload();
     }
+
+    public static DecimalFormat DECIMAL_FORMATTER = new DecimalFormat();
 
     private static final List<String> LANGUAGES = List.of(
         "english",
@@ -119,7 +128,10 @@ public final class Settings {
         return YamlConfiguration.loadConfiguration(config);
     }
 
-    public static boolean USING_LEGACY_KEYS = false; // from before version 1.12
+    public static boolean USING_OLD_COLOR_CODES = false; // from before Coins v1.16
+    public static boolean USING_LEGACY_KEYS = false; // from before Coins v1.12
+    public static boolean USING_OLD_PLACEHOLDERS = false; // from a very old Coins version
+
     private static final Converter<String, String> LEGACY_CONVERTER =
         CaseFormat.LOWER_HYPHEN.converterTo(CaseFormat.LOWER_CAMEL);
 
@@ -139,7 +151,8 @@ public final class Settings {
                 if (!config.contains(configKey)) {
                     String validKey = configKey;
                     configKey = LEGACY_CONVERTER.convert(validKey); // convert to old style
-                    if (configKey != null && config.contains(configKey) && !USING_LEGACY_KEYS) {
+                    if (configKey != null && config.contains(configKey)) {
+                        // deprecated in Coins v1.14
                         showWarning("You are using the old format of config keys ('" + configKey + "' instead of '" + validKey +"')." +
                                 " Please update your config, as support for this will be dropped in the future.");
                         USING_LEGACY_KEYS = true;
@@ -185,6 +198,37 @@ public final class Settings {
                     }
                     configValue = configMap;
                 }
+                else if (configClass == Component.class) {
+                    String value = config.getString(configKey);
+                    if (value == null) {
+                        throw new NullPointerException();
+                    }
+
+                    // deprecated in Coins v1.16
+                    if (value.contains("{$}") || value.contains("%amount%")) {
+                        USING_OLD_PLACEHOLDERS = true;
+                        value = value.replace("{$}", "{currency}").replace("%amount%", "{amount}");
+                        showWarning(("Found outdated placeholders for '%s' in the config at `%s`. Change {$} or %%amount%% to " +
+                            "{currency} or {amount}. Support will be removed in a future release.").formatted(
+                            value, configKey
+                        ));
+                    }
+
+                    // deprecated in Coins v1.16
+                    if (ComponentUtil.isLegacyColored(value)) {
+                        USING_OLD_COLOR_CODES = true;
+                        String message = ComponentUtil.parseLegacyToMiniMessage(value);
+                        showWarning(("Found outdated color codes for '%s' in the config at `%s`. Change this to mini-message " +
+                            "formatting '%s'. Support for old color codes will be removed in a future release. More info: " +
+                            "https://github.com/justEli/Coins/wiki/Formatting-messages-and-components").formatted(
+                            value, configKey, message
+                        ));
+                        configValue = ComponentUtil.parse(message);
+                    }
+                    else {
+                        configValue = ComponentUtil.parse(value);
+                    }
+                }
                 else if (configClass == String.class || configClass == Material.class || configClass == SoundKey.class || configClass == MessagePosition.class) {
                     String value = config.getString(configKey);
                     if (value == null) {
@@ -206,7 +250,7 @@ public final class Settings {
                         }
                     }
                     else {
-                        configValue = Util.color(value);
+                        configValue = value;
                     }
                 }
                 else if (configClass == Long.class || configClass == Integer.class || configClass == Float.class || configClass == Double.class) {
@@ -271,20 +315,21 @@ public final class Settings {
         String decimals = Config.MONEY_DECIMALS == 0? "#" : "0".repeat(Config.MONEY_DECIMALS);
         String groupSeparator = Config.DIGIT_GROUP_SEPARATOR.isEmpty()? "" : ",";
 
-        Config.DECIMAL_FORMATTER = new DecimalFormat("#" + groupSeparator + "##0." + decimals, formatSymbols);
+        DECIMAL_FORMATTER = new DecimalFormat("#" + groupSeparator + "##0." + decimals, formatSymbols);
     }
 
     private Optional<Material> getMaterial(String name, String configKey) {
         var key = NamespacedKey.fromString(name);
         if (key != null) {
-            var material = Registry.MATERIAL.get(key);
-            if (material != null) {
-                return Optional.of(material);
+            var type = Registry.MATERIAL.get(key);
+            if (type != null) {
+                return Optional.of(type);
             }
         }
 
         Material material = Material.matchMaterial(name.replace(" ", "_").toUpperCase().replace("COIN", "SUNFLOWER"));
         if (material != null) {
+            // deprecated in Coins v1.16
             showWarning(("Found an outdated material '%s' in the config at `%s`. Change this to its namespaced " +
                 "key '%s'. Support for outdated material types will be removed in a future release.").formatted(
                 name, configKey, material.getKey().toString()
@@ -311,13 +356,14 @@ public final class Settings {
     private Optional<EntityType> getEntityType(String name, String configKey) {
         var key = NamespacedKey.fromString(name);
         if (key != null) {
-            var material = Registry.ENTITY_TYPE.get(key);
-            if (material != null) {
-                return Optional.of(material);
+            var type = Registry.ENTITY_TYPE.get(key);
+            if (type != null) {
+                return Optional.of(type);
             }
         }
 
         try {
+            // deprecated in Coins v1.16
             var type = EntityType.valueOf(name.replace(" ", "_").toUpperCase());
             showWarning(("Found an outdated entity type '%s' in the config at `%s`. Change this to its namespaced " +
                 "key '%s'. Support for outdated entity types will be removed in a future release.").formatted(
@@ -337,11 +383,14 @@ public final class Settings {
         // outdated way of parsing sound
         var sound = fromEnumSound(name);
         if (sound.isPresent()) {
-            showWarning(("Found an outdated sound type '%s' in the config at `%s`. Change this to its namespaced " +
-                "key '%s'. Support for outdated sound types will be removed in a future release.").formatted(
-                name, configKey, sound.get().getKey().toString()
-            ));
-            return Optional.of(new SoundKey(sound.get()));
+            try {
+                showWarning(("Found an outdated sound type '%s' in the config at `%s`. Change this to its namespaced " +
+                    "key '%s'. Support for outdated sound types will be removed in a future release.").formatted(
+                    name, configKey, sound.get().getKey().toString()
+                ));
+                return Optional.of(new SoundKey(sound.get()));
+            }
+            catch (Throwable ignored) {}
         }
 
         var key = NamespacedKey.fromString(name);
@@ -355,6 +404,7 @@ public final class Settings {
     }
 
     // parse Sound from enum, will be removed in the future
+    // deprecated in Coins v1.15
     private static Optional<Sound> fromEnumSound(String name) {
         try {
             var sound = Sound.valueOf(name.toUpperCase().replace(" ", "_"));
@@ -388,21 +438,47 @@ public final class Settings {
         return warnings;
     }
 
-    private static final Converter<String, String> VAR_CONVERTER = CaseFormat.UPPER_UNDERSCORE.converterTo(CaseFormat.LOWER_HYPHEN);
+    private static final Converter<String, String> VAR_CONVERTER =
+        CaseFormat.UPPER_UNDERSCORE.converterTo(CaseFormat.LOWER_HYPHEN);
 
-    public TreeSet<String> getKeys() {
-        TreeSet<String> values = new TreeSet<>();
-
+    public List<Component> getKeys() {
+        Map<String, Component> values = new TreeMap<>();
         for (Field field : Config.class.getDeclaredFields()) {
-            if (Modifier.isStatic(field.getModifiers()) && Modifier.isPublic(field.getModifiers()) && !field.isAnnotationPresent(Deprecated.class)) {
+            boolean staticAndPublic = Modifier.isStatic(field.getModifiers()) && Modifier.isPublic(field.getModifiers());
+            if (staticAndPublic && !field.isAnnotationPresent(Deprecated.class)) {
                 try {
-                    values.add(VAR_CONVERTER.convert(field.getName()) + " &8»&7 " + Util.formatCurrency(field.get(Config.class).toString()));
+                    var name = VAR_CONVERTER.convert(field.getName());
+                    if (name == null) {
+                        continue;
+                    }
+
+                    Object value = field.get(Config.class);
+                    Component component = switch (value) {
+                        case Component component0 -> ComponentUtil.replaceCurrency(component0);
+                        case Boolean bool -> Component.text(bool, bool? NamedTextColor.GREEN : NamedTextColor.RED);
+                        case Keyed keyed -> Component.text(keyed.getKey().toString(), ColorResolver.VAR);
+                        default -> ComponentUtil.replaceCurrency(Component.text(value.toString(), ColorResolver.VAR));
+                    };
+
+                    values.put(
+                        field.getName(),
+                        Component.text()
+                            .append(Component.text(name))
+                            .append(Component.text(" » ", NamedTextColor.DARK_GRAY))
+                            .append(component)
+                            .build()
+                    );
                 }
-                catch (Exception ignored) {}
+                catch (Throwable ignored) {}
             }
         }
 
-        return values;
+        return new ArrayList<>(values.values());
+    }
+
+    @Deprecated
+    private static String color(String message) {
+        return ChatColor.translateAlternateColorCodes('&', message);
     }
 
     public void initializeMessages(String language) {
@@ -416,12 +492,12 @@ public final class Settings {
             try {
                 Object name = json.orElseThrow().get(message.name());
                 // todo new color style for all messages in .json (no more &-codes)
-                Message.MESSAGES.put(message, Util.color(Util.formatCurrency(name.toString())));
+                Message.MESSAGES.put(message, color(Util.formatCurrency(name.toString().replace("{$}", "{currency}"))));
             }
             catch (Exception exception) {
                 missingKeys.add(message.name());
                 if (fallbackLanguage != null) {
-                    Message.MESSAGES.put(message, Util.color(Util.formatCurrency(fallbackLanguage.get(message.name()).toString())));
+                    Message.MESSAGES.put(message, color(Util.formatCurrency(fallbackLanguage.get(message.name()).toString())));
                 }
             }
         }
@@ -447,20 +523,18 @@ public final class Settings {
         try (InputStream fileStream = Files.newInputStream(file.get().toPath())) {
             return Optional.ofNullable(jsonStream(fileStream));
         }
-        catch (Exception ignored) {}
-
-        return Optional.empty();
+        catch (Exception exception) {
+            return Optional.empty();
+        }
     }
 
-    private JSONObject retrieveFallbackLanguage() {
+    private @Nullable JSONObject retrieveFallbackLanguage() {
         try (InputStream inputStream = coins.getResource("language/english.json")) {
             return jsonStream(inputStream);
         }
         catch (Exception exception) {
-            exception.printStackTrace();
-            stackTraceInfo();
+            return null;
         }
-        return null;
     }
 
     private JSONObject jsonStream(InputStream inputStream) {
@@ -468,24 +542,8 @@ public final class Settings {
             return (JSONObject) new JSONParser().parse(reader);
         }
         catch (IOException | ParseException exception) {
-            exception.printStackTrace();
-            stackTraceInfo();
+            return null;
         }
-        return null;
-    }
-
-    private void stackTraceInfo() {
-        coins.console(Level.WARNING, """
-            The above error does not affect the plugin. Though, it is appreciated if you \
-            report this error to Coins in the Discord server (https://discord.gg/fVwCETj) \
-            at #coins-errors, because the error should not happen. Include this line. \
-            Details[OS='%s',JAVA='%s',MC='%s']
-            """.formatted(
-                System.getProperty("os.name"),
-                System.getProperty("java.version"),
-                coins.getServer().getVersion()
-            )
-        );
     }
 
     private Optional<File> retrieveLanguageFile(String language) {

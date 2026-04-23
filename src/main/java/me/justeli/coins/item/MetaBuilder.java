@@ -1,7 +1,9 @@
 package me.justeli.coins.item;
 
 import me.justeli.coins.Coins;
-import me.justeli.coins.util.Util;
+import me.justeli.coins.util.ComponentUtil;
+import me.justeli.coins.util.VersionUtil;
+import net.kyori.adventure.text.Component;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -26,8 +28,13 @@ public final class MetaBuilder implements Cloneable {
         this.itemMeta = itemStack.getItemMeta();
     }
 
-    public MetaBuilder setName(String name) {
-        itemMeta.setDisplayName(Util.color(name));
+    public MetaBuilder setName(Component name) {
+        if (VersionUtil.isPlatformAtLeast(VersionUtil.Platform.PAPER)) {
+            itemMeta.displayName(name);
+        }
+        else {
+            itemMeta.setDisplayName(ComponentUtil.toSpigotDisplayName(name));
+        }
         return this;
     }
 
@@ -47,7 +54,7 @@ public final class MetaBuilder implements Cloneable {
         return this;
     }
 
-    public <T> Optional<T> setData(String key, @NotNull PersistentDataType<T, T> type) {
+    public <T> Optional<T> getData(String key, @NotNull PersistentDataType<T, T> type) {
         if (itemMeta == null) {
             return Optional.empty();
         }

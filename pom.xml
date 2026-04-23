@@ -20,7 +20,7 @@
         <versions.folia>1.21.4</versions.folia> <!-- folia doesn't like 1.21 -->
 
         <versions.adventure-platform-bukkit>4.4.1</versions.adventure-platform-bukkit>
-        <versions.adventure>4.26.1</versions.adventure>
+        <versions.adventure>4.20.0</versions.adventure> <!-- used by paper 1.21.4 -->
     </properties>
 
     <build>

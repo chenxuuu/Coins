@@ -3,11 +3,25 @@
 # # # # # # # # # # # # # # # # # # # # # # # #
 # This config was generated for Coins version ${project.version}.
 
+# Support and donating
+# --------------------
+# Join the Discord support server at https://plugin.coins.community/discord. Make sure to
+#  read the FAQ (#coins-faq) first, before asking for support in #coins-general.
+
 # This project is entirely being developed in the spare time of the developer. If you like
 #  the plugin, consider donating at https://plugin.coins.community/.
 
-# Join the Discord support server at https://plugin.coins.community/discord. Make sure to
-#  read the FAQ (#coins-faq) first, before asking for support in #coins-general.
+
+# Coloring and formatting
+# -----------------------
+# This plugin supports coloring of the mini-message format. This means that all color
+#  codes go in diamond brackets. Anything you see in diamond brackets is a defined color.
+#  Examples of this are <blue>, <minecoin_gold>, <#FFC512>, and <italic>. There are a
+#  handful of additional color codes to use, like <material_lapis> and <up>. So-called
+#  'legacy' color codes (&-codes) are not supported. Please visit Coins' wiki page for
+#  more explanation and examples! And yes, <up>, <down> and <money> are also color codes.
+# Wiki: https://github.com/justEli/Coins/wiki/Formatting-messages-and-components
+
 
 #  #  #  #  #  #  #  #
 #  Misc & Language   #
@@ -26,7 +40,8 @@ currency-symbol: '$'
 # This message is sent as action bar (bottom of a player's screen) by default, telling the
 #  player how much money they have picked up. The variable '{currency}' will be replaced
 #  by the configured value at 'currency-symbol'.
-pickup-message: '&2+ &a{currency}{amount}'
+# Color guide: See 'Coloring and formatting' at the top of the config.
+pickup-message: '<up>↑ <money>{currency}{amount}'
 pickup-message-position: 'actionbar' # other options: 'subtitle', 'title', 'chat'
 
 # How many decimals should currency from this plugin have? Set to 0 for rounded money.
@@ -36,7 +51,7 @@ pickup-message-position: 'actionbar' # other options: 'subtitle', 'title', 'chat
 money-decimals: 2
 
 # The symbols to use for separating digits (in thousands). The default values (dot, and
-#  comma) format numbers, for example, like 1,000.6 or 2,100.90 (depending on your setting
+#  comma) format numbers like, for example: 1,000.6 or 2,100.90 (depending on your setting
 #  'money-decimals'). The group separator can be empty if preferred.
 digit-decimal-separator: '.'
 digit-group-separator: ','
@@ -45,33 +60,34 @@ digit-group-separator: ','
 #  Coin Properties   #
 #  #  #  #  #  #  #  #
 
-# Here you can configure the names of dropped coins and withdrawn coins. HEX color codes
-#  are possible as well, with following format: '&#xxxxxx', where x = [0-9a-f]. Color
-#  codes: http://minecraft.gamepedia.com/Formatting_codes
-dropped-coin-name: '&6Coin'
+# Here you can configure the names of dropped coins and withdrawn coins. Dropped coins
+#  only appear in hoppers, when that setting is enabled. Withdrawn coins come from
+#  /withdraw, and will only be of 'singular' when a withdrawn coin's worth is 1.
+# Color guide: See 'Coloring and formatting' at the top of the config.
+dropped-coin-name: '<coins>Coin'
 withdrawn-coin-names:
-  singular: '&e{amount} &6Coin'
-  plural: '&e{amount} &6Coins'
+  singular: '<var>{amount} <coins>Coin'
+  plural: '<var>{amount} <coins>Coins'
 
 # The material that coins should be made of. Use a namespaced key for the material. One
 #  location to find this is at the suggestions of the /give command.
 coin-item: 'minecraft:sunflower'
 
-# You can also set a custom texture for the coin, as a skull. Filling this will ignore
-#  'coin-item'. Input the text from the example page at "Other > Value" at the bottom of
-#  the page, it's a 'texture value'. For the example, that would be the one starting with
-#  "eyJ0ZXh0dXJl[...]". In case you need the UUID of the skull, it is always:
-#  00000001-0001-0001-0001-000000000002.
+# You can also set a custom texture for the coin, as a player head. Filling this will
+#  ignore 'coin-item'. Input the text from the example page at "Other > Value" at the
+#  bottom of the page, it's a 'texture value'. For the example, that would be the one
+#  starting with "eyJ0ZXh0dXJl[...]". In case you need the UUID of the skull, it is
+#  always: 00000001-0001-0001-0001-000000000002.
 # Example skull: https://minecraft-heads.com/custom-heads/decoration/3005-money-bag
 # Wiki: https://github.com/justEli/Coins/wiki/Player-head-coin-texture
 skull-texture: ''
 
-# Whether to give the coin an enchanted effect. Does not work for skulls.
+# Whether to give the coin an enchanted effect. Does not work for player heads.
 enchanted-coin: false
 
 # This value sets the custom model data value for the coin. This can be used for custom
-#  textures. Default: 0 (disables the feature) You are probably only interested if you use
-#  a custom texture pack.
+#  textures. Default: 0 (disables the feature). You are probably only interested if you
+#  use a custom texture pack.
 # Wiki: https://github.com/justEli/Coins/wiki/Custom-model-data-coin-texture
 custom-model-data: 0
 
@@ -246,7 +262,8 @@ enable-withdraw: true
 max-withdraw-amount: 10000.00
 
 # Tell the player how much money they have withdrawn.
-withdraw-message: '&4- &c{currency}{amount}'
+# Color guide: See 'Coloring and formatting' at the top of the config.
+withdraw-message: '<down>↓ <money>{currency}{amount}'
 withdraw-message-position: 'actionbar' # other options: 'subtitle', 'title', 'chat'
 
 #  #  #  #  #
@@ -275,12 +292,13 @@ money-taken:
 
 # Should the plugin take the *amount* of money from them, or the *percentage* of their
 #  money? An amount (take-percentage: false) of 10 to 30 would be $10 to $30. A percentage
-#  (take-percentage: true) of 10 to 30 would be 10% to 30%.
+#  (take-percentage: true) of 10 to 30 would be 10% to 30% of their current balance.
 take-percentage: false
 
 # And should the money be dropped, or just disappear? Disappears by default.
 drop-on-death: false
 
 # The format of the message in (the middle of, by default) their screen.
-death-message: '&4- &c{currency}{amount}'
+# Color guide: See 'Coloring and formatting' at the top of the config.
+death-message: '<down>↓ <money>{currency}{amount}'
 death-message-position: 'subtitle' # other options: 'actionbar', 'title', 'chat'

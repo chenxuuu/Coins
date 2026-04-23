@@ -3,8 +3,8 @@ package me.justeli.coins.hook.bstats;
 import me.justeli.coins.Coins;
 import me.justeli.coins.config.Config;
 import me.justeli.coins.config.Settings;
+import me.justeli.coins.util.ComponentUtil;
 import me.justeli.coins.util.Util;
-import net.md_5.bungee.api.ChatColor;
 import org.bstats.charts.SimplePie;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.NotNull;
@@ -44,25 +44,17 @@ public final class Metrics {
     }
 
     private static String toPercentage(double amount) {
-        return (int) Math.max(0, Math.min(100, amount * 100D)) + "%";
-    }
-
-    private static String toStripped(String message) {
-        return ChatColor.stripColor(Util.color(message.replace("%amount%", "{amount}").replace("{$}", "{currency}")));
-    }
-
-    private static String toCapitalized(String message) {
-        return (message == null || message.isEmpty())? "" : message.substring(0, 1).toUpperCase() + message.substring(1).toLowerCase();
+        return (int) Math.clamp(amount * 100D, 0, 100) + "%";
     }
 
     public void register() {
         metrics(coins, metrics -> {
-            metrics.add("language", () -> toCapitalized(Config.LANGUAGE));
-            metrics.add("currencySymbol", () -> toStripped(Config.CURRENCY_SYMBOL));
+            metrics.add("language", () -> Util.toCapitalized(Config.LANGUAGE));
+            metrics.add("currencySymbol", () -> Config.CURRENCY_SYMBOL);
             metrics.add("coinItem", () -> coins.getBaseCoin().cloneBaseDropped().build().getType().getKey().toString());
             metrics.add("usingSkullTexture", () -> Config.SKULL_TEXTURE != null && !Config.SKULL_TEXTURE.isEmpty());
             metrics.add("enchantedCoin", () -> Config.ENCHANTED_COIN);
-            metrics.add("pickupMessage", () -> toStripped(Config.PICKUP_MESSAGE));
+            metrics.add("pickupMessage", () -> ComponentUtil.toStripped(Config.PICKUP_MESSAGE));
             metrics.add("dropEachCoin", () -> Config.DROP_EACH_COIN);
             metrics.add("dropWithAnyDeath", () -> Config.DROP_WITH_ANY_DEATH);
             metrics.add("moneyAmount", () -> toRounded((Config.MONEY_AMOUNT_FROM + Config.MONEY_AMOUNT_TO) / 2D));
@@ -90,11 +82,11 @@ public final class Metrics {
             metrics.add("moneyTaken", () -> toRounded((Config.MONEY_TAKEN_FROM + Config.MONEY_TAKEN_TO) / 2));
             metrics.add("takePercentage", () -> Config.TAKE_PERCENTAGE);
             metrics.add("dropOnDeath", () -> Config.DROP_ON_DEATH);
-            metrics.add("deathMessage", () -> toStripped(Config.DEATH_MESSAGE));
+            metrics.add("deathMessage", () -> ComponentUtil.toStripped(Config.DEATH_MESSAGE));
             metrics.add("locationLimitHours", () -> toRounded(Config.LOCATION_LIMIT_HOURS));
-            metrics.add("droppedCoinName", () -> toStripped(Config.DROPPED_COIN_NAME));
-            metrics.add("withdrawnCoinNamesSingular", () -> toStripped(Config.WITHDRAWN_COIN_NAME_SINGULAR));
-            metrics.add("withdrawnCoinNamesPlural", () -> toStripped(Config.WITHDRAWN_COIN_NAME_PLURAL));
+            metrics.add("droppedCoinName", () -> ComponentUtil.toStripped(Config.DROPPED_COIN_NAME));
+            metrics.add("withdrawnCoinNamesSingular", () -> ComponentUtil.toStripped(Config.WITHDRAWN_COIN_NAME_SINGULAR));
+            metrics.add("withdrawnCoinNamesPlural", () -> ComponentUtil.toStripped(Config.WITHDRAWN_COIN_NAME_PLURAL));
             metrics.add("detectLegacyCoins", () -> false);
             metrics.add("allowNameChange", () -> Config.ALLOW_NAME_CHANGE);
             metrics.add("allowModification", () -> Config.ALLOW_MODIFICATION);
@@ -108,6 +100,8 @@ public final class Metrics {
             metrics.add("pickupMessagePosition", () -> Config.PICKUP_MESSAGE_POSITION.name().toLowerCase());
             metrics.add("withdrawMessagePosition", () -> Config.WITHDRAW_MESSAGE_POSITION.name().toLowerCase());
             metrics.add("deathMessagePosition", () -> Config.DEATH_MESSAGE_POSITION.name().toLowerCase());
+            metrics.add("usingOldColorCodes", () -> Settings.USING_OLD_COLOR_CODES);
+            metrics.add("usingOldPlaceholders", () -> Settings.USING_OLD_PLACEHOLDERS);
 
             // mythicmobs
             metrics.add("usingMythicMobs", () -> coins.getServer().getPluginManager().isPluginEnabled("MythicMobs"));

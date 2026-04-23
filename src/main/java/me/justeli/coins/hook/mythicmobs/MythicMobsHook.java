@@ -18,7 +18,7 @@ import org.bukkit.event.Listener;
 public final class MythicMobsHook implements Listener {
     private final Coins coins;
 
-    // todo move mythic mobs hook to separate plugin
+    // todo move mythicmobs hook to separate plugin
     public MythicMobsHook(Coins coins) {
         this.coins = coins;
         coins.parseEventHandlers(this);

@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Eli
  * @since April 24, 2017 (creation)
  */
+@Deprecated
 public enum Message {
     NO_PERMISSION,
     RELOAD_SUCCESS,

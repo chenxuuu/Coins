@@ -1,9 +1,10 @@
 package me.justeli.coins.config;
 
+import me.justeli.coins.util.ComponentUtil;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 
-import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -19,11 +20,10 @@ public class Config {
 
     public static Map<Material, Integer> BLOCK_DROPS = new ConcurrentHashMap<>();
     public static Map<EntityType, Integer> MOB_MULTIPLIER = new ConcurrentHashMap<>();
-    public static DecimalFormat DECIMAL_FORMATTER = new DecimalFormat();
 
     @ConfigEntry(value = "debug-logging", required = false)
     public static Boolean DEBUG_LOGGING = false;
-    
+
     @ConfigEntry("stack-coins")
     public static Boolean STACK_COINS = false;
 
@@ -91,19 +91,19 @@ public class Config {
     public static Material COIN_ITEM = Material.SUNFLOWER;
 
     @ConfigEntry("pickup-message")
-    public static String PICKUP_MESSAGE = "&2+ &a{currency}{amount}";
+    public static Component PICKUP_MESSAGE = ComponentUtil.parse("<up>↑ <money>{currency}{amount}");
 
     @ConfigEntry("pickup-message-position")
     public static MessagePosition PICKUP_MESSAGE_POSITION = MessagePosition.ACTIONBAR;
 
     @ConfigEntry("withdraw-message")
-    public static String WITHDRAW_MESSAGE = "&4- &c{currency}{amount}";
+    public static Component WITHDRAW_MESSAGE = ComponentUtil.parse("<down>↓ <money>{currency}{amount}");
 
     @ConfigEntry("withdraw-message-position")
     public static MessagePosition WITHDRAW_MESSAGE_POSITION = MessagePosition.ACTIONBAR;
 
     @ConfigEntry("death-message")
-    public static String DEATH_MESSAGE = "&4- &c{currency}{amount}";
+    public static Component DEATH_MESSAGE = ComponentUtil.parse("<down>↓ <money>{currency}{amount}");
 
     @ConfigEntry("death-message-position")
     public static MessagePosition DEATH_MESSAGE_POSITION = MessagePosition.SUBTITLE;
@@ -124,13 +124,13 @@ public class Config {
     public static String DIGIT_GROUP_SEPARATOR = ",";
 
     @ConfigEntry("dropped-coin-name")
-    public static String DROPPED_COIN_NAME = "&6Coin";
+    public static Component DROPPED_COIN_NAME = ComponentUtil.parse("<coins>Coin");
 
     @ConfigEntry("withdrawn-coin-names.singular")
-    public static String WITHDRAWN_COIN_NAME_SINGULAR = "&e{amount} &6Coin";
+    public static Component WITHDRAWN_COIN_NAME_SINGULAR = ComponentUtil.parse("<var>{amount} <coins>Coin");
 
     @ConfigEntry("withdrawn-coin-names.plural")
-    public static String WITHDRAWN_COIN_NAME_PLURAL = "&e{amount} &6Coins";
+    public static Component WITHDRAWN_COIN_NAME_PLURAL = ComponentUtil.parse("<var>{amount} <coins>Coins");
 
     @ConfigEntry("drop-chance")
     public static Double DROP_CHANCE = 0.9;

@@ -3,8 +3,10 @@ package me.justeli.coins.command;
 import me.justeli.coins.Coins;
 import me.justeli.coins.config.Config;
 import me.justeli.coins.config.Message;
+import me.justeli.coins.util.ComponentUtil;
 import me.justeli.coins.util.Permissions;
 import me.justeli.coins.util.Util;
+import net.kyori.adventure.text.Component;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -34,7 +36,7 @@ public abstract class WithdrawCommandLogic {
         }
 
         if (!Permissions.hasWithdraw(sender) || !(sender instanceof Player player)) {
-            Util.sendNoPermission(sender);
+            coins.getMessenger().sendNoPermission(sender);
             return;
         }
 
@@ -76,8 +78,11 @@ public abstract class WithdrawCommandLogic {
                     player.getInventory().addItem(coin);
                     player.sendMessage(Message.WITHDRAW_COINS.replace(Util.toFormattedMoneyDecimals(total)));
 
-                    if (!Config.WITHDRAW_MESSAGE.isEmpty()) {
-                        Util.sendMessage(player, Config.WITHDRAW_MESSAGE, Config.WITHDRAW_MESSAGE_POSITION, total);
+                    if (!Config.WITHDRAW_MESSAGE.equals(Component.empty())) {
+                        coins.getMessenger().sendMessage(
+                            player, Config.WITHDRAW_MESSAGE_POSITION,
+                            ComponentUtil.replaceAmount(Config.WITHDRAW_MESSAGE, total)
+                        );
                     }
                 });
             }
@@ -87,7 +92,7 @@ public abstract class WithdrawCommandLogic {
         });
     }
 
-    private static final List<String> VALUE_ARGUMENT = List.of("<value>");
+    private static final List<String> VALUE_ARGUMENT = List.of("<value>"); // todo language
     private static final List<String> AMOUNT_ARGUMENT = List.of("[amount]");
 
     public List<String> getTabCompletions(@NotNull String[] args) {

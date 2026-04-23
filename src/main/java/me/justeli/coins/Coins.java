@@ -24,9 +24,9 @@ import me.justeli.coins.hook.Economies;
 import me.justeli.coins.item.CoinMeta;
 import me.justeli.coins.item.CreateCoin;
 import me.justeli.coins.item.MetaBuilder;
-import me.justeli.coins.util.PluginVersion;
-import me.justeli.coins.util.PluginVersionUtil;
-import me.justeli.coins.util.ScheduleUtil;
+import me.justeli.coins.util.Messenger;
+import me.justeli.coins.util.VersionCheck;
+import me.justeli.coins.util.Scheduler;
 import me.justeli.coins.util.VersionUtil;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
@@ -35,8 +35,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -48,46 +46,57 @@ import java.util.logging.Level;
 public final class Coins extends JavaPlugin {
     private static final ExecutorService ASYNC_THREAD = Executors.newSingleThreadExecutor();
 
-    private static final String UNSUPPORTED_VERSION =
-        "Coins only supports Minecraft version 1.19 and newer.";
-
-    private static final String USING_BUKKIT = """
-        You seem to be using Bukkit, but the plugin Coins requires at least Spigot! Please use Spigot, \
-        Paper, or Folia. Moving from Bukkit to Spigot will NOT cause any problems with other plugins, since \
-        Spigot only adds more features to Bukkit.""";
-
-    private static final String LACKING_ECONOMY =
-        "There is no proper economy installed. Please install %s.";
-
     @Override
     public void onEnable() {
-        long current = System.currentTimeMillis();
-        Locale.setDefault(Locale.US);
-
-        if (VersionUtil.getMinecraftVersion() < 19) {
-            line(Level.SEVERE);
-            console(Level.SEVERE, UNSUPPORTED_VERSION);
-            disablePlugin(UNSUPPORTED_VERSION);
+        long startMillis = System.currentTimeMillis();
+        if (VersionUtil.getMinecraftVersion() < 21) {
+            disablePlugin("Coins only supports Minecraft version 1.21 and newer.");
         }
 
         if (VersionUtil.getPlatform() == VersionUtil.Platform.BUKKIT) {
-            line(Level.SEVERE);
-            console(Level.SEVERE, USING_BUKKIT);
-            disablePlugin(USING_BUKKIT);
+            disablePlugin("""
+                You seem to be using Bukkit, but the plugin Coins requires at least Spigot! Please use Spigot, Paper, \
+                or Folia. Moving from Bukkit to Spigot will NOT cause any problems with other plugins, since Spigot \
+                only adds more features to Bukkit.
+                """
+            );
         }
 
-        this.scheduleUtil = new ScheduleUtil(this);
-        this.economy = new Economies(this);
+        // basic functionality
+        this.scheduler = new Scheduler(this);
+        this.messenger = new Messenger(this);
 
+        // economy provider
+        this.economy = new Economies(this);
         if (!economy.getMissingPluginNames().isEmpty()) {
-            line(Level.SEVERE);
-            for (String missingPlugin : economy.getMissingPluginNames()) {
-                String reason = String.format(LACKING_ECONOMY, missingPlugin);
-                console(Level.SEVERE, reason);
-                disablePlugin(reason);
+            for (var missing : economy.getMissingPluginNames()) {
+                disablePlugin("There is no proper economy installed. Please install %s.".formatted(missing));
             }
         }
 
+        // plugin version checker and metrics
+        this.versionCheck = new VersionCheck(this);
+        ASYNC_THREAD.submit(() -> {
+            versionCheck.checkVersion();
+            new Metrics(this);
+        });
+
+        // show disabled reasons if plugin can't function
+        if (!disabledReasons.isEmpty()) {
+            if (VersionUtil.isPlatformAtLeast(VersionUtil.Platform.PAPER)) {
+                new DisabledCommandPaper(this);
+            }
+            else {
+                new DisabledCommandSpigot(this);
+            }
+
+            line(Level.SEVERE);
+            console(Level.SEVERE, "Plugin 'Coins' is now disabled, until the issues above are resolved.");
+            line(Level.SEVERE);
+            return;
+        }
+
+        // mythicmobs integration
         if (getServer().getPluginManager().isPluginEnabled("MythicMobs")) {
             try {
                 if (getServer().getPluginManager().getPlugin("MythicMobs") != null) {
@@ -104,58 +113,40 @@ public final class Coins extends JavaPlugin {
             }
         }
 
-        this.pluginVersionUtil = new PluginVersionUtil(this);
-        if (disabledReasons.isEmpty()) {
-            this.settings = new Settings(this);
-            this.baseCoin = new BaseCoin(this);
-            this.coinMeta = new CoinMeta(this);
-            this.createCoin = new CreateCoin(this);
+        // initialize everything if there are no errors
+        this.settings = new Settings(this);
+        this.baseCoin = new BaseCoin(this);
+        this.coinMeta = new CoinMeta(this);
+        this.createCoin = new CreateCoin(this);
 
-            // register events
-            this.unfairMobHandler = new UnfairMobHandler(this);
-            this.pickupHandler = new PickupHandler(this);
+        // register events
+        this.unfairMobHandler = new UnfairMobHandler(this);
+        this.pickupHandler = new PickupHandler(this);
 
-            if (VersionUtil.isPlatformAtLeast(VersionUtil.Platform.PAPER)) {
-                new PaperEventListener(this);
-            }
-            else {
-                new SpigotEventListener(this);
-            }
-
-            new HopperHandler(this);
-            new DropHandler(this);
-            new InteractionHandler(this);
-            new InventoryHandler(this);
-            new ModificationHandler(this);
-
-            // register commands
-            if (VersionUtil.isPlatformAtLeast(VersionUtil.Platform.PAPER)) {
-                new CoinsCommandPaper(this);
-                new WithdrawCommandPaper(this);
-            }
-            else {
-                new CoinsCommandSpigot(this);
-                new WithdrawCommandSpigot(this);
-            }
+        if (VersionUtil.isPlatformAtLeast(VersionUtil.Platform.PAPER)) {
+            new PaperEventListener(this);
         }
         else {
-            if (VersionUtil.isPlatformAtLeast(VersionUtil.Platform.PAPER)) {
-                new DisabledCommandPaper(this);
-            }
-            else {
-                new DisabledCommandSpigot(this);
-            }
-            line(Level.SEVERE);
-            console(Level.SEVERE, "Plugin 'Coins' is now disabled, until the issues are fixed.");
-            line(Level.SEVERE);
+            new SpigotEventListener(this);
         }
 
-        ASYNC_THREAD.submit(() -> {
-            pluginVersionUtil.checkVersion();
-            new Metrics(this);
-        });
+        new HopperHandler(this);
+        new DropHandler(this);
+        new InteractionHandler(this);
+        new InventoryHandler(this);
+        new ModificationHandler(this);
 
-        console(Level.INFO, "Initialized in %,dms.".formatted(System.currentTimeMillis() - current));
+        // register commands
+        if (VersionUtil.isPlatformAtLeast(VersionUtil.Platform.PAPER)) {
+            new CoinsCommandPaper(this);
+            new WithdrawCommandPaper(this);
+        }
+        else {
+            new CoinsCommandSpigot(this);
+            new WithdrawCommandSpigot(this);
+        }
+
+        console(Level.INFO, "Initialized in %,dms.".formatted(System.currentTimeMillis() - startMillis));
     }
 
     public void parseEventHandlers(@NotNull Listener listener) {
@@ -176,27 +167,6 @@ public final class Coins extends JavaPlugin {
         }
     }
 
-    // getters from other places
-
-    private ScheduleUtil scheduleUtil;
-    public ScheduleUtil getScheduler() {
-        return scheduleUtil;
-    }
-
-    private Economies economy;
-    public Economies getEconomy() {
-        return economy;
-    }
-
-    public MetaBuilder meta(ItemStack itemStack) {
-        return new MetaBuilder(this, itemStack);
-    }
-
-    private PluginVersionUtil pluginVersionUtil;
-    public Optional<PluginVersion> getLatestVersion() {
-        return pluginVersionUtil.getLatestVersion();
-    }
-
     // plugin disablement
 
     private final List<String> disabledReasons = new ArrayList<>();
@@ -206,6 +176,8 @@ public final class Coins extends JavaPlugin {
     }
 
     private void disablePlugin(String reason) {
+        line(Level.SEVERE);
+        console(Level.SEVERE, reason);
         disabledReasons.add(reason);
     }
 
@@ -221,6 +193,21 @@ public final class Coins extends JavaPlugin {
     }
 
     // getters of classes
+
+    private Messenger messenger;
+    public Messenger getMessenger() {
+        return messenger;
+    }
+
+    private Scheduler scheduler;
+    public Scheduler getScheduler() {
+        return scheduler;
+    }
+
+    private Economies economy;
+    public Economies getEconomy() {
+        return economy;
+    }
 
     private BaseCoin baseCoin;
     public BaseCoin getBaseCoin() {
@@ -242,6 +229,11 @@ public final class Coins extends JavaPlugin {
         return coinMeta;
     }
 
+    private VersionCheck versionCheck;
+    public VersionCheck getVersionCheck() {
+        return versionCheck;
+    }
+
     private PickupHandler pickupHandler;
     public PickupHandler getPickupHandler() {
         return pickupHandler;
@@ -250,5 +242,11 @@ public final class Coins extends JavaPlugin {
     private UnfairMobHandler unfairMobHandler;
     public UnfairMobHandler getUnfairMobHandler() {
         return unfairMobHandler;
+    }
+
+    // getters from other places
+
+    public MetaBuilder meta(ItemStack itemStack) {
+        return new MetaBuilder(this, itemStack);
     }
 }
