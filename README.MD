@@ -28,35 +28,5 @@ Coins is a plugin that allows players to collect coins for killing mobs and mini
 - Vault, and
 - an economy supportive plugin (like Essentials)​
 
-## Commands
-
-- **/withdraw <value> [amount]** - Withdraw money from your balance into physical coins.
-- **/coins drop <player|x,y,z[,world]> <amount> [radius] [worth]** - Drop coins around a player or location. An amount and radius can be specificied, and the value of each coin with 'worth'.
-- **/coins remove [radius|all]** - Remove coins in a radius or all of them in the world.
-- **/coins settings [page]** - List all the currently loaded settings from the config.
-- **/coins reload** - Reload the config to update all settings in-game.
-- **/coins version** - Check the version of the plugin and check if there's an update.
-- **/coins toggle** - Enable or disable coin drops and withdraw access.
-
-## Permissions
-
-| Permission | Description |
-| -------- | -------- |
-| coins.withdraw | Access to /withdraw, and the ability to withdraw and deposit coins. |
-| coins.bypass.lose_on_death | Bypass the mechanic that lets your lose coins on death. |
-| coins.bypass.percentage_hit | Bypass the minimum percentage to hit a mob before it drops coins. |
-| coins.bypass.location_limit | Bypass the limit for killing mobs in a single location. |
-| coins.drop.spawner_mobs | Always get coins for killing mobs from spawners. |
-| coins.drop.split_mobs | Always get coins for killing split mobs, like slimes. |
-| coins.drop.hostile_mobs | Always get coins for killing hostile mobs. |
-| coins.drop.passive_mobs | Always get coins for killing passive mobs. |
-| coins.drop.players | Always get coins for killing other players. |
-| coins.command.reload | Able to reload the plugin's config and language. |
-| coins.command.settings | Able to see the currently loaded settings. |
-| coins.command.drop | Able to use the /coins drop command. |
-| coins.command.remove | Able to clear coins in a radius or the world. |
-| coins.command.language | Able to see the currently loaded language. |
-| coins.command.version | Able to see details about version and updates. |
-| coins.command.toggle | Allows the /coins toggle command. |
-| coins.disable | Remove the ability for the player to pick up coins. |
-| coins.multiplier.*n* | Multiply dropped coins by *n* for this player. |
+## More information
+https://github.com/justEli/Coins/wiki
