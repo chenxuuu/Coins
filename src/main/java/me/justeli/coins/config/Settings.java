@@ -218,7 +218,7 @@ public final class Settings {
                     if (ComponentUtil.isLegacyColored(value)) {
                         USING_OLD_COLOR_CODES = true;
                         String message = ComponentUtil.parseLegacyToMiniMessage(value);
-                        showWarning(("Found outdated color codes for '%s' in the config at `%s`. Change this to mini-message " +
+                        showWarning(("Found outdated color codes for '%s' in the config at `%s`. Change this to minimessage " +
                             "formatting '%s'. Support for old color codes will be removed in a future release. More info: " +
                             "https://github.com/justEli/Coins/wiki/Formatting-messages-and-components").formatted(
                             value, configKey, message

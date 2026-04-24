@@ -14,7 +14,7 @@
 
 # Coloring and formatting
 # -----------------------
-# This plugin supports coloring of the mini-message format. This means that all color
+# This plugin supports coloring of the minimessage format. This means that all color
 #  codes go in diamond brackets. Anything you see in diamond brackets is a defined color.
 #  Examples of this are <blue>, <minecoin_gold>, <#FFC512>, and <italic>. There are a
 #  handful of additional color codes to use, like <material_lapis> and <up>. So-called

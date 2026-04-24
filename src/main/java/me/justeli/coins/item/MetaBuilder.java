@@ -4,6 +4,7 @@ import me.justeli.coins.Coins;
 import me.justeli.coins.util.ComponentUtil;
 import me.justeli.coins.util.VersionUtil;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -30,7 +31,7 @@ public final class MetaBuilder implements Cloneable {
 
     public MetaBuilder setName(Component name) {
         if (VersionUtil.isPlatformAtLeast(VersionUtil.Platform.PAPER)) {
-            itemMeta.displayName(name);
+            itemMeta.displayName(name.decoration(TextDecoration.ITALIC, false));
         }
         else {
             itemMeta.setDisplayName(ComponentUtil.toSpigotDisplayName(name));
