@@ -263,7 +263,7 @@ max-withdraw-amount: 10000.00
 
 # Tell the player how much money they have withdrawn.
 # Color guide: See 'Coloring and formatting' at the top of the config.
-withdraw-message: '<down>↓ <money>{currency}{amount}'
+withdraw-message: '<coins>→ <money>{currency}{amount}'
 withdraw-message-position: 'actionbar' # other options: 'subtitle', 'title', 'chat'
 
 #  #  #  #  #

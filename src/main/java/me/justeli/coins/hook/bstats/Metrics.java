@@ -55,6 +55,7 @@ public final class Metrics {
             metrics.add("usingSkullTexture", () -> Config.SKULL_TEXTURE != null && !Config.SKULL_TEXTURE.isEmpty());
             metrics.add("enchantedCoin", () -> Config.ENCHANTED_COIN);
             metrics.add("pickupMessage", () -> ComponentUtil.toStripped(Config.PICKUP_MESSAGE));
+            metrics.add("withdrawMessage", () -> ComponentUtil.toStripped(Config.WITHDRAW_MESSAGE));
             metrics.add("dropEachCoin", () -> Config.DROP_EACH_COIN);
             metrics.add("dropWithAnyDeath", () -> Config.DROP_WITH_ANY_DEATH);
             metrics.add("moneyAmount", () -> toRounded((Config.MONEY_AMOUNT_FROM + Config.MONEY_AMOUNT_TO) / 2D));
