@@ -44,7 +44,7 @@ import java.util.logging.Level;
  * @since December 13, 2016 (creation)
  */
 public final class Coins extends JavaPlugin {
-    public static final ExecutorService EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
+    private static final ExecutorService VIRTUAL_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
     @Override
     public void onEnable() {
@@ -80,7 +80,7 @@ public final class Coins extends JavaPlugin {
 
         // plugin version checker and metrics
         this.versionCheck = new VersionCheck(this);
-        EXECUTOR.submit(() -> versionCheck.checkVersion());
+        VIRTUAL_EXECUTOR.submit(() -> versionCheck.checkVersion());
 
         var metrics = new Metrics(this);
 
@@ -93,7 +93,7 @@ public final class Coins extends JavaPlugin {
                 new DisabledCommandSpigot(this);
             }
 
-            EXECUTOR.submit(() -> metrics.register(true));
+            VIRTUAL_EXECUTOR.submit(() -> metrics.register(true));
             return;
         }
 
@@ -143,7 +143,7 @@ public final class Coins extends JavaPlugin {
             new WithdrawCommandSpigot(this);
         }
 
-        EXECUTOR.submit(() -> metrics.register(false));
+        VIRTUAL_EXECUTOR.submit(() -> metrics.register(false));
         console(Level.INFO, "Initialized in %,dms.".formatted(System.currentTimeMillis() - startMillis));
     }
 

@@ -45,6 +45,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -57,6 +58,8 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
@@ -493,9 +496,12 @@ public final class Settings {
     // - nl-NL  2026/04
     // - es-ES  2026/04  discord=xxdaterxx.337196910194589696
     // - it-IT  2026/04  spigot=peppe73.693388
+    // - sv-SE  2026/04  discord=k4rlus.221730501315002368
 
     private static final String DEFAULT_LOCALE = "en-US";
     private static final Pattern LOCALE_PATTERN = Pattern.compile("^[a-z]{2}(-[A-Z]{2})?$");
+
+    private static final ExecutorService SINGLE_EXECUTOR = Executors.newSingleThreadExecutor();
 
     public void reloadLanguage() {
         // check if 'locale' is configured correctly
@@ -518,7 +524,7 @@ public final class Settings {
             }
         }
 
-        Coins.EXECUTOR.submit(this::downloadLanguageFiles);
+        SINGLE_EXECUTOR.submit(this::downloadLanguageFiles);
 
         try { parseLanguage(); }
         catch (Throwable throwable) {
@@ -530,6 +536,7 @@ public final class Settings {
         List<String> downloadedLocales = new ArrayList<>();
         try (var client = HttpClient.newHttpClient()) {
             HttpRequest request = HttpRequest.newBuilder()
+                .timeout(Duration.ofSeconds(10))
                 .uri(URI.create("https://api.github.com/repos/justEli/Coins/contents/locale"))
                 .header("Accept", "application/vnd.github+json").build();
 
@@ -563,6 +570,7 @@ public final class Settings {
                 }
 
                 HttpRequest fileRequest = HttpRequest.newBuilder()
+                    .timeout(Duration.ofSeconds(10))
                     .uri(URI.create(json.get("download_url").getAsString()))
                     .build();
 
@@ -575,8 +583,8 @@ public final class Settings {
 
             if (!supportedLocales.contains(Config.LOCALE)) {
                 coins.console(Level.INFO, """
-                    Consider to submit your language file to https://plugin.coins.community/discord, so \
-                    it can become a supported language."""
+                    Consider to submit your language file to https://plugin.coins.community/discord for it \
+                    to become a supported language for other servers."""
                 );
             }
         }
@@ -586,7 +594,7 @@ public final class Settings {
 
         if (!downloadedLocales.isEmpty()) {
             coins.console(Level.INFO, """
-                New language files have been added the 'locale' folder. These locale(s) can now be used in the config: '%s'"""
+                Language files have been added to the 'locale' folder, and can be used in the config: '%s'"""
                 .formatted(String.join("', '", downloadedLocales))
             );
         }

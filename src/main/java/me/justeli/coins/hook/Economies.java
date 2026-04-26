@@ -54,11 +54,11 @@ public final class Economies implements EconomyHook {
 
         if (economy == null) {
             missingPlugins.add("an economy providing plugin for '" + name + "'");
+            return;
         }
-        else {
-            plugin.getLogger().log(Level.INFO, "Using '%s' as the economy provider.".formatted(name));
-            missingPlugins.clear();
-        }
+
+        plugin.getLogger().log(Level.INFO, "Using '%s' as the economy provider.".formatted(name));
+        missingPlugins.clear();
     }
 
     public Set<String> getMissingPluginNames() {
